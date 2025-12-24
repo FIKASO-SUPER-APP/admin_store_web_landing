@@ -94,11 +94,12 @@ services:
       - "--log.level=WARN"
       - "--accesslog=true"
       - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--entrypoints.websecure.http.tls.options=default@file"
       # Middleware de sécurité
-      - "--entrypoints.websecure.http.tls.options=default"
-      - "--entrypoints.websecure.http.middlewares=security-headers@file"
+      #- "--entrypoints.websecure.http.tls.options=default"
+      #- "--entrypoints.websecure.http.middlewares=security-headers@file"
       # Rate limiting
-      - "--entrypoints.websecure.http.middlewares=rate-limit@file"
+      #- "--entrypoints.websecure.http.middlewares=rate-limit@file"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_certificates:/letsencrypt
