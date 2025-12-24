@@ -44,7 +44,7 @@ services:
     container_name: fikaso_admin
     restart: unless-stopped
     environment:
-      APP_NAME: "eMart Admin"
+      APP_NAME: "Fikaso Admin"
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${ADMIN_APP_KEY}
@@ -64,6 +64,21 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
+
+      FIREBASE_APIKEY: ${FIREBASE_APIKEY}
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
+      FIREBASE_DATABASE_URL: ${FIREBASE_DATABASE_URL}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
+      FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
+      FIREBASE_APP_ID: ${ADMIN_FIREBASE_APP_ID}
+
+      IS_DISABLE_CHANGE_IMAGE: ${IS_DISABLE_CHANGE_IMAGE}
+      LOCALE: ${LOCALE}
+      FALLBACK_LOCALE: ${FALLBACK_LOCALE}
+
+      APP_TIMEZONE: ${APP_TIMEZONE}
+      NODE_PATH: ${NODE_PATH}
       
       RUN_MIGRATIONS: "false"
     volumes:
@@ -90,7 +105,7 @@ services:
     container_name: fikaso_store
     restart: unless-stopped
     environment:
-      APP_NAME: "eMart Store"
+      APP_NAME: "Fikaso Store"
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${STORE_APP_KEY}
@@ -110,6 +125,17 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
+
+      FIREBASE_APIKEY: ${FIREBASE_APIKEY}
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
+      FIREBASE_DATABASE_URL: ${FIREBASE_DATABASE_URL}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
+      FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
+      FIREBASE_APP_ID: ${STORE_FIREBASE_APP_ID}
+
+      LOCALE: ${LOCALE}
+      FALLBACK_LOCALE: ${FALLBACK_LOCALE}
       
       RUN_MIGRATIONS: "false"
     volumes:
@@ -136,7 +162,7 @@ services:
     container_name: fikaso_website
     restart: unless-stopped
     environment:
-      APP_NAME: "eMart Website"
+      APP_NAME: "FIKASO"
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${WEBSITE_APP_KEY}
@@ -156,6 +182,17 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
+
+      FIREBASE_APIKEY: ${FIREBASE_APIKEY}
+      FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
+      FIREBASE_DATABASE_URL: ${FIREBASE_DATABASE_URL}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
+      FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
+      FIREBASE_APP_ID: ${WEB_FIREBASE_APP_ID}
+
+      LOCALE: ${LOCALE}
+      FALLBACK_LOCALE: ${FALLBACK_LOCALE}
       
       RUN_MIGRATIONS: "false"
     volumes:
