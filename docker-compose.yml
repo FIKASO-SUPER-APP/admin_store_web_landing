@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Base de données MySQL partagée
   mysql:
@@ -51,7 +49,7 @@ services:
       APP_URL: ${ADMIN_URL:-https://admin.example.com}
       
       DB_CONNECTION: mysql
-      DB_HOST: mysql
+      DB_HOST: fikaso_mysql
       DB_PORT: 3306
       DB_DATABASE: ${ADMIN_DB_DATABASE:-fikaso_admin}
       DB_USERNAME: ${ADMIN_DB_USERNAME:-admin_user}
@@ -61,7 +59,7 @@ services:
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
       
-      REDIS_HOST: redis
+      REDIS_HOST: fikaso_redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
 
@@ -112,7 +110,7 @@ services:
       APP_URL: ${STORE_URL:-https://store.example.com}
       
       DB_CONNECTION: mysql
-      DB_HOST: mysql
+      DB_HOST: fikaso_mysql
       DB_PORT: 3306
       DB_DATABASE: ${STORE_DB_DATABASE:-fikaso_store}
       DB_USERNAME: ${STORE_DB_USERNAME:-store_user}
@@ -122,7 +120,7 @@ services:
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
       
-      REDIS_HOST: redis
+      REDIS_HOST: fikaso_redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
 
@@ -169,7 +167,7 @@ services:
       APP_URL: ${WEBSITE_URL:-https://shop.example.com}
       
       DB_CONNECTION: mysql
-      DB_HOST: mysql
+      DB_HOST: fikaso_mysql
       DB_PORT: 3306
       DB_DATABASE: ${WEBSITE_DB_DATABASE:-fikaso_website}
       DB_USERNAME: ${WEBSITE_DB_USERNAME:-website_user}
@@ -179,7 +177,7 @@ services:
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
       
-      REDIS_HOST: redis
+      REDIS_HOST: fikaso_redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
       REDIS_PORT: 6379
 
@@ -229,7 +227,7 @@ services:
 
   # Traefik - Reverse Proxy avec SSL automatique
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3
     container_name: fikaso_traefik
     restart: unless-stopped
     command:
@@ -262,8 +260,8 @@ services:
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.middlewares=traefik-auth"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER:-admin:$$apr1$$xyz$$hashed}"
+      #- "traefik.http.routers.traefik.middlewares=traefik-auth"
+      #- "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER:-admin:$$apr1$$xyz$$hashed}"
 
 networks:
   fikaso_network:
