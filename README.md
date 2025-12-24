@@ -329,8 +329,8 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ## 👥 Équipe
 
-- **Développeur Principal** - [Votre Nom](https://github.com/votre-username)
-- **DevOps** - [Nom](https://github.com/username)
+- **Développeur Principal** - [Votre Nom](https://github.com/bouba-34)
+- **DevOps** - [Nom](https://github.com/bouba-34)
 
 ---
 
@@ -346,8 +346,8 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 ## 📞 Support
 
 - **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/VOTRE_USERNAME/VOTRE_REPO/issues)
-- **Email**: support@votredomaine.com
+- **Issues**: [GitHub Issues](https://github.com/FIKASO-SUPER-APP/admin_store_web_landing/issues)
+- **Email**: support@fikasoplus.com
 
 ---
 
