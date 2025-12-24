@@ -227,7 +227,7 @@ services:
 
   # Traefik - Reverse Proxy avec SSL automatique
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3
     container_name: fikaso_traefik
     restart: unless-stopped
     command:
