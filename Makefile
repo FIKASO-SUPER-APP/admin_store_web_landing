@@ -42,7 +42,7 @@ dev-stop: ## Arrêter l'environnement de développement
 
 prod: ## Démarrer l'environnement de production
 	@echo "$(BLUE)🚀 Démarrage de l'environnement de production...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	docker-compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml up -d
 	@echo "$(GREEN)✅ Environnement de production démarré!$(NC)"
 
 prod-logs: ## Voir les logs en production
