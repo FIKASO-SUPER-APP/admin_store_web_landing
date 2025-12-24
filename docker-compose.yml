@@ -54,6 +54,7 @@ services:
       DB_DATABASE: ${ADMIN_DB_DATABASE:-fikaso_admin}
       DB_USERNAME: ${ADMIN_DB_USERNAME:-admin_user}
       DB_PASSWORD: ${ADMIN_DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
       
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
@@ -115,6 +116,7 @@ services:
       DB_DATABASE: ${STORE_DB_DATABASE:-fikaso_store}
       DB_USERNAME: ${STORE_DB_USERNAME:-store_user}
       DB_PASSWORD: ${STORE_DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
       
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
@@ -172,6 +174,7 @@ services:
       DB_DATABASE: ${WEBSITE_DB_DATABASE:-fikaso_website}
       DB_USERNAME: ${WEBSITE_DB_USERNAME:-website_user}
       DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
       
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
