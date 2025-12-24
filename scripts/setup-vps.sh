@@ -163,7 +163,7 @@ sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
 sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 
-systemctl restart sshd
+systemctl restart ssh
 success "SSH sécurisé"
 
 # 12. Configuration des limites de ressources
