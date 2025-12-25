@@ -54,7 +54,6 @@ services:
       DB_DATABASE: ${ADMIN_DB_DATABASE:-fikaso_admin}
       DB_USERNAME: ${ADMIN_DB_USERNAME:-admin_user}
       DB_PASSWORD: ${ADMIN_DB_PASSWORD}
-      DB_SSL: ${DB_SSL}
       
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
@@ -71,6 +70,7 @@ services:
       FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
       FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
       FIREBASE_APP_ID: ${ADMIN_FIREBASE_APP_ID}
+      FIREBASE_MEASUREMENT_ID: ${ADMIN_FIREBASE_MEASUREMENT_ID}
 
       IS_DISABLE_CHANGE_IMAGE: ${IS_DISABLE_CHANGE_IMAGE}
       LOCALE: ${LOCALE}
@@ -116,7 +116,6 @@ services:
       DB_DATABASE: ${STORE_DB_DATABASE:-fikaso_store}
       DB_USERNAME: ${STORE_DB_USERNAME:-store_user}
       DB_PASSWORD: ${STORE_DB_PASSWORD}
-      DB_SSL: ${DB_SSL}
       
       CACHE_DRIVER: redis
       SESSION_DRIVER: redis
@@ -133,6 +132,7 @@ services:
       FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
       FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
       FIREBASE_APP_ID: ${STORE_FIREBASE_APP_ID}
+      FIREBASE_MEASUREMENT_ID: ${STORE_FIREBASE_MEASUREMENT_ID}
 
       LOCALE: ${LOCALE}
       FALLBACK_LOCALE: ${FALLBACK_LOCALE}
@@ -191,6 +191,7 @@ services:
       FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
       FIREBASE_MESSAAGING_SENDER_ID: ${FIREBASE_MESSAAGING_SENDER_ID}
       FIREBASE_APP_ID: ${WEB_FIREBASE_APP_ID}
+      FIREBASE_MEASUREMENT_ID: ${WEB_FIREBASE_MEASUREMENT_ID}
 
       LOCALE: ${LOCALE}
       FALLBACK_LOCALE: ${FALLBACK_LOCALE}
@@ -263,8 +264,8 @@ services:
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
-      #- "traefik.http.routers.traefik.middlewares=traefik-auth"
-      #- "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER}"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER}"
 
 networks:
   fikaso_network:
