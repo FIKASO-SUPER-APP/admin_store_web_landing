@@ -57,6 +57,12 @@ RUN echo 'server {' > /etc/nginx/http.d/default.conf && \
     echo '    add_header X-Content-Type-Options "nosniff";' >> /etc/nginx/http.d/default.conf && \
     echo '    add_header X-XSS-Protection "1; mode=block";' >> /etc/nginx/http.d/default.conf && \
     echo '' >> /etc/nginx/http.d/default.conf && \
+    echo '    location ~* \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|otf|json)$ {' >> /etc/nginx/http.d/default.conf && \
+    echo '        expires 1y;' >> /etc/nginx/http.d/default.conf && \
+    echo '        add_header Cache-Control "public, immutable";' >> /etc/nginx/http.d/default.conf && \
+    echo '        access_log off;' >> /etc/nginx/http.d/default.conf && \
+    echo '    }' >> /etc/nginx/http.d/default.conf && \
+    echo '' >> /etc/nginx/http.d/default.conf && \
     echo '    location / {' >> /etc/nginx/http.d/default.conf && \
     echo '        try_files $uri $uri/ /index.php?$query_string;' >> /etc/nginx/http.d/default.conf && \
     echo '    }' >> /etc/nginx/http.d/default.conf && \
