@@ -51,8 +51,8 @@ services:
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${ADMIN_DB_DATABASE:-fikaso_admin}
-      DB_USERNAME: ${ADMIN_DB_USERNAME:-admin_user}
+      DB_DATABASE: ${ADMIN_DB_DATABASE}
+      DB_USERNAME: ${ADMIN_DB_USERNAME}
       DB_PASSWORD: ${ADMIN_DB_PASSWORD}
       
       CACHE_DRIVER: redis
@@ -60,7 +60,7 @@ services:
       QUEUE_CONNECTION: redis
       
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
@@ -113,8 +113,8 @@ services:
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${STORE_DB_DATABASE:-fikaso_store}
-      DB_USERNAME: ${STORE_DB_USERNAME:-store_user}
+      DB_DATABASE: ${STORE_DB_DATABASE}
+      DB_USERNAME: ${STORE_DB_USERNAME}
       DB_PASSWORD: ${STORE_DB_PASSWORD}
       
       CACHE_DRIVER: redis
@@ -122,7 +122,7 @@ services:
       QUEUE_CONNECTION: redis
       
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
@@ -171,8 +171,8 @@ services:
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${WEBSITE_DB_DATABASE:-fikaso_website}
-      DB_USERNAME: ${WEBSITE_DB_USERNAME:-website_user}
+      DB_DATABASE: ${WEBSITE_DB_DATABASE}
+      DB_USERNAME: ${WEBSITE_DB_USERNAME}
       DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
       DB_SSL: ${DB_SSL}
       
@@ -181,7 +181,7 @@ services:
       QUEUE_CONNECTION: redis
       
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
