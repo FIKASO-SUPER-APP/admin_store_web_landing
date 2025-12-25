@@ -66,24 +66,24 @@ start() {
     docker-compose exec website composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Website échouée"
     
     # Exécuter les migrations pour chaque application
-    info "Exécution des migrations..."
-    docker-compose exec admin php artisan migrate --force || warning "Migrations Admin échouées"
-    docker-compose exec store php artisan migrate --force || warning "Migrations Store échouées"
-    docker-compose exec website php artisan migrate --force || warning "Migrations Website échouées"
+    #info "Exécution des migrations..."
+    #docker-compose exec admin php artisan migrate --force || warning "Migrations Admin échouées"
+    #docker-compose exec store php artisan migrate --force || warning "Migrations Store échouées"
+    #docker-compose exec website php artisan migrate --force || warning "Migrations Website échouées"
     
     # Optimisation Laravel
-    info "Optimisation des applications Laravel..."
-    docker-compose exec admin php artisan config:cache
-    docker-compose exec admin php artisan route:cache
-    docker-compose exec admin php artisan view:cache
+    #info "Optimisation des applications Laravel..."
+    #docker-compose exec admin php artisan config:cache
+    #docker-compose exec admin php artisan route:cache
+    #docker-compose exec admin php artisan view:cache
     
-    docker-compose exec store php artisan config:cache
-    docker-compose exec store php artisan route:cache
-    docker-compose exec store php artisan view:cache
+    #docker-compose exec store php artisan config:cache
+    #docker-compose exec store php artisan route:cache
+    #docker-compose exec store php artisan view:cache
     
-    docker-compose exec website php artisan config:cache
-    docker-compose exec website php artisan route:cache
-    docker-compose exec website php artisan view:cache
+    #docker-compose exec website php artisan config:cache
+    #docker-compose exec website php artisan route:cache
+    #docker-compose exec website php artisan view:cache
     
     info "Déploiement terminé avec succès!"
     info "Vos applications sont accessibles sur:"
@@ -129,14 +129,14 @@ update() {
     docker-compose exec website composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Website échouée"
     
     # Migrations
-    docker-compose exec admin php artisan migrate --force
-    docker-compose exec store php artisan migrate --force
-    docker-compose exec website php artisan migrate --force
+    #docker-compose exec admin php artisan migrate --force
+    #docker-compose exec store php artisan migrate --force
+    #docker-compose exec website php artisan migrate --force
     
     # Clear cache
-    docker-compose exec admin php artisan cache:clear
-    docker-compose exec store php artisan cache:clear
-    docker-compose exec website php artisan cache:clear
+    #docker-compose exec admin php artisan cache:clear
+    #docker-compose exec store php artisan cache:clear
+    #docker-compose exec website php artisan cache:clear
     
     info "Mise à jour terminée!"
 }
