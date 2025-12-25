@@ -59,6 +59,12 @@ start() {
     info "Attente du démarrage de MySQL..."
     sleep 10
     
+    # Installer les dépendances Composer dans chaque conteneur
+    info "Installation des dépendances Composer..."
+    docker-compose exec admin composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Admin échouée"
+    docker-compose exec store composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Store échouée"
+    docker-compose exec website composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Website échouée"
+    
     # Exécuter les migrations pour chaque application
     info "Exécution des migrations..."
     docker-compose exec admin php artisan migrate --force || warning "Migrations Admin échouées"
@@ -115,6 +121,12 @@ update() {
     
     # Rebuild et redémarrage
     docker-compose up -d --build
+    
+    # Installer les dépendances Composer dans chaque conteneur
+    info "Installation des dépendances Composer..."
+    docker-compose exec admin composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Admin échouée"
+    docker-compose exec store composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Store échouée"
+    docker-compose exec website composer install --no-dev --optimize-autoloader --no-interaction || warning "Installation Website échouée"
     
     # Migrations
     docker-compose exec admin php artisan migrate --force
