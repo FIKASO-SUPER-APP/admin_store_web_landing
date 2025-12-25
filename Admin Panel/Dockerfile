@@ -61,6 +61,7 @@ RUN echo 'server {' > /etc/nginx/http.d/default.conf && \
     echo '        expires 1y;' >> /etc/nginx/http.d/default.conf && \
     echo '        add_header Cache-Control "public, immutable";' >> /etc/nginx/http.d/default.conf && \
     echo '        access_log off;' >> /etc/nginx/http.d/default.conf && \
+    echo '        try_files $uri =404;' >> /etc/nginx/http.d/default.conf && \
     echo '    }' >> /etc/nginx/http.d/default.conf && \
     echo '' >> /etc/nginx/http.d/default.conf && \
     echo '    location / {' >> /etc/nginx/http.d/default.conf && \
