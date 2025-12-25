@@ -190,6 +190,10 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
+      # Monter les dossiers public de Laravel pour servir les fichiers statiques
+      - ./Admin Panel/public:/var/www/admin_public:ro
+      - ./Store Panel/public:/var/www/store_public:ro
+      - ./Website Panel/public:/var/www/website_public:ro
     depends_on:
       - admin
       - store
