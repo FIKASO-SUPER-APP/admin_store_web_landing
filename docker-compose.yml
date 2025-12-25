@@ -1,38 +1,28 @@
+version: '3.8'
+
 services:
-  # Base de données MySQL partagée
+  # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: fikaso_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-SecureRootPassword123!}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-fikaso_admin}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: fikaso_admin_db
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/00_init_databases.sql
+      #- ./emart_admin_database.sql:/docker-entrypoint-initdb.d/01_admin.sql
+      #- ./emart_store_database.sql:/docker-entrypoint-initdb.d/02_store.sql
+      #- ./emart_website_database.sql:/docker-entrypoint-initdb.d/03_website.sql
+    ports:
+      - "3306:3306"
     networks:
       - fikaso_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-SecureRootPassword123!}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis pour le cache et les sessions
-  redis:
-    image: redis:7-alpine
-    container_name: fikaso_redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-SecureRedisPassword123!}
-    volumes:
-      - redis_data:/data
-    networks:
-      - fikaso_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   # Admin Panel
   admin:
@@ -42,30 +32,22 @@ services:
     container_name: fikaso_admin
     restart: unless-stopped
     environment:
-      APP_NAME: "Fikaso Admin"
-      APP_ENV: production
-      APP_DEBUG: "false"
-      APP_KEY: ${ADMIN_APP_KEY}
-      APP_URL: ${ADMIN_URL:-https://admin.example.com}
-      
-      DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${ADMIN_DB_DATABASE}
-      DB_USERNAME: ${ADMIN_DB_USERNAME}
-      DB_PASSWORD: ${ADMIN_DB_PASSWORD}
-      
+      DB_DATABASE: fikaso_admin_db
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: ${ADMIN_APP_KEY}
+      APP_URL: ${ADMIN_URL:-https://admin.example.com}
+
       BROADCAST_DRIVER: log
       CACHE_DRIVER: file
       FILESYSTEM_DRIVER: local
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: file
       SESSION_LIFETIME: 120
-
-      
-      #REDIS_HOST: redis
-      #REDIS_PASSWORD: ${REDIS_PASSWORD}
-      #REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
       FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
@@ -82,23 +64,15 @@ services:
 
       APP_TIMEZONE: ${APP_TIMEZONE}
       NODE_PATH: ${NODE_PATH}
-      
-      RUN_MIGRATIONS: "false"
+
     volumes:
-      - admin_storage:/var/www/admin/storage
+      - ./Admin Panel:/var/www/html
+      - admin_storage:/var/www/html/storage
     depends_on:
       mysql:
         condition: service_healthy
-      #redis:
-      #  condition: service_healthy
     networks:
       - fikaso_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.admin.rule=Host(`${ADMIN_DOMAIN:-admin.example.com}`)"
-      - "traefik.http.routers.admin.entrypoints=websecure"
-      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
-      - "traefik.http.services.admin.loadbalancer.server.port=80"
 
   # Store Panel
   store:
@@ -108,30 +82,22 @@ services:
     container_name: fikaso_store
     restart: unless-stopped
     environment:
-      APP_NAME: "Fikaso Store"
-      APP_ENV: production
-      APP_DEBUG: "false"
-      APP_KEY: ${STORE_APP_KEY}
-      APP_URL: ${STORE_URL:-https://store.example.com}
-      
-      DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${STORE_DB_DATABASE}
-      DB_USERNAME: ${STORE_DB_USERNAME}
-      DB_PASSWORD: ${STORE_DB_PASSWORD}
-      
+      DB_DATABASE: fikaso_store_db
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: ${STORE_APP_KEY}
+      APP_URL: ${STORE_URL:-https://store.example.com}
+
       BROADCAST_DRIVER: log
       CACHE_DRIVER: file
       FILESYSTEM_DRIVER: local
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: file
       SESSION_LIFETIME: 120
-
-      
-      #REDIS_HOST: redis
-      #REDIS_PASSWORD: ${REDIS_PASSWORD}
-      #REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
       FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
@@ -144,23 +110,15 @@ services:
 
       LOCALE: ${LOCALE}
       FALLBACK_LOCALE: ${FALLBACK_LOCALE}
-      
-      RUN_MIGRATIONS: "false"
+
     volumes:
-      - store_storage:/var/www/store/storage
+      - ./Store Panel:/var/www/html
+      - store_storage:/var/www/html/storage
     depends_on:
       mysql:
         condition: service_healthy
-      #redis:
-      #  condition: service_healthy
     networks:
       - fikaso_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.store.rule=Host(`${STORE_DOMAIN:-store.example.com}`)"
-      - "traefik.http.routers.store.entrypoints=websecure"
-      - "traefik.http.routers.store.tls.certresolver=letsencrypt"
-      - "traefik.http.services.store.loadbalancer.server.port=80"
 
   # Website Panel
   website:
@@ -170,31 +128,22 @@ services:
     container_name: fikaso_website
     restart: unless-stopped
     environment:
-      APP_NAME: "FIKASO"
-      APP_ENV: production
-      APP_DEBUG: "false"
-      APP_KEY: ${WEBSITE_APP_KEY}
-      APP_URL: ${WEBSITE_URL:-https://shop.example.com}
-      
-      DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: ${WEBSITE_DB_DATABASE}
-      DB_USERNAME: ${WEBSITE_DB_USERNAME}
-      DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
-      DB_SSL: ${DB_SSL}
-      
+      DB_DATABASE: fikaso_website_db
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: ${WEBSITE_APP_KEY}
+      APP_URL: ${WEBSITE_URL:-https://shop.example.com}
+
       BROADCAST_DRIVER: log
       CACHE_DRIVER: file
       FILESYSTEM_DRIVER: local
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: file
       SESSION_LIFETIME: 120
-
-      
-      #REDIS_HOST: redis
-      #REDIS_PASSWORD: ${REDIS_PASSWORD}
-      #REDIS_PORT: 6379
 
       FIREBASE_APIKEY: ${FIREBASE_APIKEY}
       FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
@@ -207,23 +156,14 @@ services:
 
       LOCALE: ${LOCALE}
       FALLBACK_LOCALE: ${FALLBACK_LOCALE}
-      
-      RUN_MIGRATIONS: "false"
     volumes:
-      - website_storage:/var/www/website/storage
+      - ./Website Panel:/var/www/html
+      - website_storage:/var/www/html/storage
     depends_on:
       mysql:
         condition: service_healthy
-      #redis:
-      #  condition: service_healthy
     networks:
       - fikaso_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.website.rule=Host(`${WEBSITE_DOMAIN:-shop.example.com}`)"
-      - "traefik.http.routers.website.entrypoints=websecure"
-      - "traefik.http.routers.website.tls.certresolver=letsencrypt"
-      - "traefik.http.services.website.loadbalancer.server.port=80"
 
   # Landing Panel
   landing:
@@ -232,52 +172,31 @@ services:
       dockerfile: Dockerfile
     container_name: fikaso_landing
     restart: unless-stopped
+    volumes:
+      - ./Landing Panel:/usr/share/nginx/html:ro
     networks:
       - fikaso_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.landing.rule=Host(`${LANDING_DOMAIN:-www.example.com}`)"
-      - "traefik.http.routers.landing.entrypoints=websecure"
-      - "traefik.http.routers.landing.tls.certresolver=letsencrypt"
-      - "traefik.http.services.landing.loadbalancer.server.port=80"
 
-  # Traefik - Reverse Proxy avec SSL automatique
-  traefik:
-    image: traefik:v3
-    container_name: fikaso_traefik
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: fikaso_nginx
     restart: unless-stopped
-    command:
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--log.level=INFO"
-      # Redirection HTTP vers HTTPS
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"  # Dashboard Traefik (protéger en production)
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik_certificates:/letsencrypt
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - admin
+      - store
+      - website
+      - landing
     networks:
       - fikaso_network
-    labels:
-      - "traefik.enable=true"
-      # Dashboard avec authentification
-      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_DOMAIN:-traefik.example.com}`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.traefik.service=api@internal"
-      #- "traefik.http.routers.traefik.middlewares=traefik-auth"
-      #- "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER}"
 
 networks:
   fikaso_network:
@@ -286,14 +205,12 @@ networks:
 volumes:
   mysql_data:
     driver: local
-  redis_data:
-    driver: local
   admin_storage:
     driver: local
   store_storage:
     driver: local
   website_storage:
     driver: local
-  traefik_certificates:
+  nginx_logs:
     driver: local
 

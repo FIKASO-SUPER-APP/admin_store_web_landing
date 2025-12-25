@@ -1,558 +1,388 @@
-# 🚀 Guide de Déploiement - eMart/Fikaso
+# Guide de Déploiement FIKASO sur VPS
 
-Guide complet pour déployer les 4 applications eMart/Fikaso sur un VPS avec Docker, Nginx/Traefik, et CI/CD.
+Ce guide explique comment déployer les 4 applications FIKASO (Admin Panel, Store Panel, Website Panel, et Landing Panel) sur un VPS en utilisant Docker et Nginx.
 
-## 📋 Table des Matières
+## 📋 Prérequis
 
-1. [Architecture](#architecture)
-2. [Prérequis](#prérequis)
-3. [Configuration Initiale du VPS](#configuration-initiale-du-vps)
-4. [Configuration des Applications](#configuration-des-applications)
-5. [Déploiement Manuel](#déploiement-manuel)
-6. [CI/CD avec GitHub Actions](#cicd-avec-github-actions)
-7. [Monitoring et Maintenance](#monitoring-et-maintenance)
-8. [Sécurité](#sécurité)
-9. [Troubleshooting](#troubleshooting)
+- Un VPS avec Ubuntu 20.04+ ou Debian 10+
+- Accès root ou sudo
+- Noms de domaine configurés pointant vers votre VPS
+- Minimum 2GB RAM, 2 CPU cores, 20GB de stockage
 
----
+## 🚀 Installation Initiale
 
-## 🏗️ Architecture
-
-Le projet contient 4 applications containerisées:
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Internet                          │
-└─────────────┬───────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────────────────┐
-│         Traefik (Reverse Proxy + SSL)                │
-│         - Ports 80/443                               │
-│         - Let's Encrypt automatique                  │
-└─┬──────────┬──────────┬──────────┬───────────────────┘
-  │          │          │          │
-  ▼          ▼          ▼          ▼
-┌────┐    ┌────┐    ┌────┐    ┌────┐
-│Admin    │Store    │Website  │Landing
-│Panel│    │Panel│    │Panel │    │Page │
-└─┬──┘    └─┬──┘    └─┬───┘    └────┘
-  │          │          │
-  └──────────┴──────────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-    ▼                 ▼
-┌────────┐      ┌────────┐
-│ MySQL  │      │ Redis  │
-└────────┘      └────────┘
-```
-
-### Applications
-
-1. **Admin Panel** (`admin.votredomaine.com`) - Interface d'administration
-2. **Store Panel** (`store.votredomaine.com`) - Interface vendeurs/magasins
-3. **Website Panel** (`shop.votredomaine.com`) - Site e-commerce public
-4. **Landing Page** (`www.votredomaine.com`) - Page marketing statique
-
-### Services Partagés
-
-- **MySQL 8.0** - Base de données (3 DB séparées)
-- **Redis 7** - Cache et sessions
-- **Traefik v2** - Reverse proxy avec SSL automatique
-
----
-
-## 📦 Prérequis
-
-### Sur votre VPS
-
-- **OS**: Ubuntu 20.04/22.04 LTS (recommandé) ou Debian 11+
-- **RAM**: Minimum 4GB (8GB recommandé)
-- **Stockage**: Minimum 40GB SSD
-- **CPU**: 2 cores minimum (4 cores recommandé)
-- **Domaines**: 4 sous-domaines configurés (DNS)
-
-### Sur votre machine locale
-
-- Git
-- Docker et Docker Compose (pour tests locaux)
-- SSH client
-
-### Domaines DNS
-
-Configurez les enregistrements A pour:
-- `admin.votredomaine.com` → IP_VPS
-- `store.votredomaine.com` → IP_VPS
-- `shop.votredomaine.com` → IP_VPS
-- `www.votredomaine.com` → IP_VPS
-- `traefik.votredomaine.com` → IP_VPS (optionnel, pour le dashboard)
-
----
-
-## 🔧 Configuration Initiale du VPS
-
-### Étape 1: Connexion au VPS
+### 1. Connexion au VPS
 
 ```bash
-ssh root@VOTRE_IP_VPS
+ssh root@your-vps-ip
 ```
 
-### Étape 2: Exécuter le script d'installation
+### 2. Mise à jour du système
 
 ```bash
-# Télécharger le script
-wget https://raw.githubusercontent.com/VOTRE_REPO/main/scripts/setup-vps.sh
-
-# Rendre exécutable
-chmod +x setup-vps.sh
-
-# Exécuter (en tant que root)
-sudo ./setup-vps.sh
+apt update && apt upgrade -y
 ```
 
-Ce script configure automatiquement:
-- ✅ Mise à jour du système
-- ✅ Installation de Docker et Docker Compose
-- ✅ Configuration du firewall (UFW)
-- ✅ Installation de Fail2Ban
-- ✅ Création d'un utilisateur de déploiement
-- ✅ Configuration SSH sécurisée
-- ✅ Configuration du swap
-- ✅ Backups automatiques quotidiens
-
-### Étape 3: Cloner le repository
+### 3. Installation de Docker
 
 ```bash
-# Se connecter avec l'utilisateur de déploiement
-su - deployer  # ou le nom d'utilisateur que vous avez choisi
+# Installation de Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 
-# Cloner le repository
-cd ~/fikaso
-git clone https://github.com/VOTRE_USERNAME/VOTRE_REPO.git .
+# Démarrage de Docker
+systemctl start docker
+systemctl enable docker
+
+# Installation de Docker Compose
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+# Vérification
+docker --version
+docker-compose --version
 ```
 
----
-
-## ⚙️ Configuration des Applications
-
-### Étape 1: Copier le fichier d'environnement
+### 4. Installation de Git
 
 ```bash
-cp .env.production.example .env
+apt install -y git
 ```
 
-### Étape 2: Éditer le fichier .env
+## 📦 Déploiement des Applications
+
+### 1. Cloner le projet
 
 ```bash
+cd /var/www
+git clone <votre-repo-git> fikaso
+cd fikaso
+```
+
+### 2. Configuration des variables d'environnement
+
+```bash
+# Copier le fichier d'exemple
+cp env.example .env
+
+# Éditer le fichier .env
 nano .env
 ```
 
-**Configuration minimale obligatoire:**
+Configurez les variables suivantes :
 
 ```env
-# Domaines
+# MySQL Configuration
+MYSQL_ROOT_PASSWORD=votre_mot_de_passe_securise
+
+# Laravel App Keys (générez-les avec: php artisan key:generate)
+ADMIN_APP_KEY=base64:votre_cle_admin
+STORE_APP_KEY=base64:votre_cle_store
+WEBSITE_APP_KEY=base64:votre_cle_website
+
+# Domains Configuration
 ADMIN_DOMAIN=admin.votredomaine.com
 STORE_DOMAIN=store.votredomaine.com
-WEBSITE_DOMAIN=shop.votredomaine.com
+WEBSITE_DOMAIN=votredomaine.com
 LANDING_DOMAIN=www.votredomaine.com
-
-# Email pour Let's Encrypt
-ACME_EMAIL=votre-email@votredomaine.com
-
-# Mots de passe (CHANGEZ-LES!)
-MYSQL_ROOT_PASSWORD=VotreMotDePasseSecurise123!
-ADMIN_DB_PASSWORD=AdminDbPassword123!
-STORE_DB_PASSWORD=StoreDbPassword123!
-WEBSITE_DB_PASSWORD=WebsiteDbPassword123!
-REDIS_PASSWORD=RedisPassword123!
 ```
 
-### Étape 3: Générer les clés Laravel
+### 3. Générer les clés Laravel
 
 ```bash
-# Pour chaque application, générez une clé unique
-# Vous pouvez utiliser cette commande en local ou générer manuellement
-php artisan key:generate --show
-
-# Ajoutez les clés dans .env
-ADMIN_APP_KEY=base64:VotreCleGeneree==
-STORE_APP_KEY=base64:VotreCleGeneree==
-WEBSITE_APP_KEY=base64:VotreCleGeneree==
+# Pour chaque application, générez une clé
+docker run --rm -v $(pwd)/"Admin Panel":/app composer:latest sh -c "cd /app && php artisan key:generate --show"
+docker run --rm -v $(pwd)/"Store Panel":/app composer:latest sh -c "cd /app && php artisan key:generate --show"
+docker run --rm -v $(pwd)/"Website Panel":/app composer:latest sh -c "cd /app && php artisan key:generate --show"
 ```
 
-### Étape 4: Générer le hash pour Traefik Dashboard
+Copiez les clés générées dans votre fichier `.env`.
 
-```bash
-# Installer apache2-utils si pas déjà fait
-sudo apt-get install apache2-utils
+### 4. Configuration des fichiers .env Laravel
 
-# Générer le hash (remplacez 'admin' et 'votre_password')
-echo $(htpasswd -nb admin votre_password) | sed -e s/\\$/\\$\\$/g
+Pour chaque application Laravel, créez/modifiez le fichier `.env` :
 
-# Copiez le résultat dans .env
-TRAEFIK_AUTH_USER=admin:$$apr1$$xyz$$leHashGenere
+**Admin Panel/.env**
+```env
+APP_NAME="FIKASO Admin"
+APP_ENV=production
+APP_KEY=base64:votre_cle_admin
+APP_DEBUG=false
+APP_URL=http://admin.votredomaine.com
+
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=emart_admin
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe_mysql
 ```
 
-### Étape 5: Créer le répertoire pour les configs Traefik
+**Store Panel/.env**
+```env
+APP_NAME="FIKASO Store"
+APP_ENV=production
+APP_KEY=base64:votre_cle_store
+APP_DEBUG=false
+APP_URL=http://store.votredomaine.com
 
-```bash
-mkdir -p traefik
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=emart_store
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe_mysql
 ```
 
-### Étape 6: Importer les bases de données
+**Website Panel/.env**
+```env
+APP_NAME="FIKASO Website"
+APP_ENV=production
+APP_KEY=base64:votre_cle_website
+APP_DEBUG=false
+APP_URL=http://votredomaine.com
 
-```bash
-# Démarrer uniquement MySQL temporairement
-docker-compose up -d mysql
-
-# Attendre que MySQL soit prêt
-sleep 30
-
-# Importer les bases de données
-docker-compose exec -T mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < emart_admin_database.sql
-docker-compose exec -T mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < emart_store_database.sql
-docker-compose exec -T mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" < emart_website_database.sql
-
-# Créer les utilisateurs de base de données
-docker-compose exec mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "
-CREATE USER IF NOT EXISTS 'admin_user_fikaso'@'%' IDENTIFIED BY '${ADMIN_DB_PASSWORD}';
-CREATE USER IF NOT EXISTS 'store_user_fikaso'@'%' IDENTIFIED BY '${STORE_DB_PASSWORD}';
-CREATE USER IF NOT EXISTS 'website_user_fikaso'@'%' IDENTIFIED BY '${WEBSITE_DB_PASSWORD}';
-GRANT ALL PRIVILEGES ON fikaso_admin.* TO 'admin_user'@'%';
-GRANT ALL PRIVILEGES ON fikaso_store.* TO 'store_user'@'%';
-GRANT ALL PRIVILEGES ON fikaso_website.* TO 'website_user'@'%';
-FLUSH PRIVILEGES;
-"
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=emart_website
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe_mysql
 ```
 
----
+### 5. Mise à jour des configurations Nginx
 
-## 🚀 Déploiement Manuel
+Modifiez les fichiers dans `nginx/conf.d/` pour remplacer `yourdomain.com` par vos vrais domaines.
 
-### Option 1: Utiliser le script de déploiement
+### 6. Rendre les scripts exécutables
 
 ```bash
-# Rendre le script exécutable
-chmod +x scripts/deploy.sh
-
-# Lancer le déploiement complet
-./scripts/deploy.sh deploy
+chmod +x deploy.sh
+chmod +x setup-ssl.sh
 ```
 
-Le script va:
-1. ✅ Vérifier les prérequis
-2. ✅ Créer un backup de la base de données
-3. ✅ Pull/Build les images Docker
-4. ✅ Démarrer les services
-5. ✅ Exécuter les migrations (si demandé)
-6. ✅ Optimiser les applications
-7. ✅ Vérifier l'état de santé
-
-### Option 2: Commandes Docker Compose manuelles
+### 7. Déployer les applications
 
 ```bash
-# Build les images
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+./deploy.sh start
+```
 
-# Démarrer tous les services
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+Cette commande va :
+- Construire toutes les images Docker
+- Démarrer tous les conteneurs
+- Créer les bases de données
+- Exécuter les migrations
+- Optimiser les applications Laravel
 
-# Vérifier l'état
+## 🔒 Configuration SSL (HTTPS)
+
+### Option 1 : Let's Encrypt (Gratuit - Recommandé)
+
+```bash
+# Installer certbot
+apt install -y certbot
+
+# Exécuter le script de configuration SSL
+./setup-ssl.sh
+```
+
+### Option 2 : Certificats personnalisés
+
+1. Placez vos certificats dans `nginx/ssl/`
+2. Nommez-les : `domain.crt` et `domain.key`
+3. Décommentez les lignes SSL dans les fichiers `nginx/conf.d/*.conf`
+4. Redémarrez nginx : `docker-compose restart nginx`
+
+## 🛠️ Gestion des Applications
+
+### Démarrer les applications
+
+```bash
+./deploy.sh start
+```
+
+### Arrêter les applications
+
+```bash
+./deploy.sh stop
+```
+
+### Redémarrer les applications
+
+```bash
+./deploy.sh restart
+```
+
+### Voir les logs
+
+```bash
+# Tous les logs
+./deploy.sh logs
+
+# Logs d'un service spécifique
+./deploy.sh logs admin
+./deploy.sh logs nginx
+./deploy.sh logs mysql
+```
+
+### Mettre à jour les applications
+
+```bash
+# Pull les derniers changements
+git pull
+
+# Mettre à jour et redémarrer
+./deploy.sh update
+```
+
+### Backup de la base de données
+
+```bash
+./deploy.sh backup
+```
+
+Les backups sont stockés dans le dossier `backups/`.
+
+## 🔧 Commandes Docker Compose Utiles
+
+```bash
+# Voir l'état des conteneurs
 docker-compose ps
 
-# Voir les logs
+# Exécuter une commande dans un conteneur
+docker-compose exec admin bash
+docker-compose exec admin php artisan migrate
+
+# Reconstruire un conteneur spécifique
+docker-compose up -d --build admin
+
+# Voir les logs en temps réel
 docker-compose logs -f
 
-# Exécuter les migrations
+# Nettoyer les volumes et images inutilisés
+docker system prune -a
+```
+
+## 📊 Structure des Services
+
+- **MySQL** : Port 3306 (interne)
+- **Admin Panel** : http://admin.votredomaine.com
+- **Store Panel** : http://store.votredomaine.com
+- **Website Panel** : http://votredomaine.com
+- **Landing Panel** : http://www.votredomaine.com
+- **Nginx** : Ports 80 (HTTP) et 443 (HTTPS)
+
+## 🐛 Dépannage
+
+### Les migrations échouent
+
+```bash
+# Vérifier si MySQL est prêt
+docker-compose exec mysql mysql -u root -p -e "SHOW DATABASES;"
+
+# Réexécuter les migrations manuellement
 docker-compose exec admin php artisan migrate --force
-docker-compose exec store php artisan migrate --force
-docker-compose exec website php artisan migrate --force
-
-# Optimiser les applications
-docker-compose exec admin php artisan optimize
-docker-compose exec store php artisan optimize
-docker-compose exec website php artisan optimize
 ```
 
-### Vérification
-
-Testez l'accès à vos applications:
+### Erreurs de permissions
 
 ```bash
-curl -I https://admin.votredomaine.com
-curl -I https://store.votredomaine.com
-curl -I https://shop.votredomaine.com
-curl -I https://www.votredomaine.com
+# Corriger les permissions des dossiers storage
+docker-compose exec admin chmod -R 775 storage bootstrap/cache
+docker-compose exec store chmod -R 775 storage bootstrap/cache
+docker-compose exec website chmod -R 775 storage bootstrap/cache
 ```
 
-Tous devraient retourner `HTTP/2 200` (ou 302/301 pour les redirections).
-
----
-
-## 🔄 CI/CD avec GitHub Actions
-
-### Étape 1: Configurer les secrets GitHub
-
-Dans votre repository GitHub, allez dans `Settings` → `Secrets and variables` → `Actions` et ajoutez:
-
-```
-SSH_PRIVATE_KEY         # Clé privée SSH pour se connecter au VPS
-VPS_HOST                # IP ou hostname du VPS
-VPS_USER                # Utilisateur de déploiement (ex: deployer)
-ADMIN_DOMAIN            # admin.votredomaine.com
-STORE_DOMAIN            # store.votredomaine.com
-WEBSITE_DOMAIN          # shop.votredomaine.com
-LANDING_DOMAIN          # www.votredomaine.com
-MYSQL_ROOT_PASSWORD     # Mot de passe root MySQL
-ADMIN_DB_PASSWORD       # Mot de passe DB admin
-STORE_DB_PASSWORD       # Mot de passe DB store
-WEBSITE_DB_PASSWORD     # Mot de passe DB website
-REDIS_PASSWORD          # Mot de passe Redis
-SLACK_WEBHOOK           # (Optionnel) Pour les notifications
-SONAR_TOKEN             # (Optionnel) Pour SonarCloud
-```
-
-### Étape 2: Workflow de déploiement
-
-Le workflow `.github/workflows/deploy.yml` se déclenche automatiquement:
-- ✅ Sur push vers `main` → Build seulement
-- ✅ Sur push vers `production` → Build + Déploiement
-- ✅ Manuellement via GitHub Actions UI
-
-### Étape 3: Processus de déploiement
-
-1. **Pull Request** → Branche `feature` vers `main`
-2. **Tests automatiques** → PHPUnit, linting
-3. **Merge vers `main`** → Build des images Docker
-4. **Push vers `production`** → Déploiement automatique sur VPS
-5. **Health checks** → Vérification que tout fonctionne
-
-### Commandes utiles
+### Clear cache Laravel
 
 ```bash
-# Déclencher un déploiement manuel
-gh workflow run deploy.yml
-
-# Voir les logs d'une exécution
-gh run view
-
-# Lister les runs
-gh run list --workflow=deploy.yml
-```
-
----
-
-## 📊 Monitoring et Maintenance
-
-### Surveiller les conteneurs
-
-```bash
-# Voir les conteneurs en cours d'exécution
-docker-compose ps
-
-# Voir l'utilisation des ressources
-docker stats
-
-# Utiliser ctop (installé par le script setup)
-ctop
-```
-
-### Logs
-
-```bash
-# Tous les services
-docker-compose logs -f
-
-# Service spécifique
-docker-compose logs -f admin
-docker-compose logs -f mysql
-docker-compose logs -f traefik
-
-# Dernières 100 lignes
-docker-compose logs --tail=100
-```
-
-### Backups
-
-Les backups automatiques sont configurés quotidiennement à 3h du matin:
-
-```bash
-# Backup manuel
-docker-compose exec mysql mysqldump -u root -p"${MYSQL_ROOT_PASSWORD}" \
-  --all-databases > backup-$(date +%Y%m%d).sql
-
-# Restaurer un backup
-docker-compose exec -T mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" \
-  < backup-20231225.sql
-```
-
-### Mises à jour
-
-```bash
-# Pull les dernières images
-docker-compose pull
-
-# Redémarrer avec les nouvelles images
-docker-compose up -d
-
-# Nettoyage
-docker image prune -af
-docker volume prune -f
-```
-
----
-
-## 🔒 Sécurité
-
-### Checklist de Sécurité
-
-- ✅ Firewall activé (UFW)
-- ✅ Fail2Ban pour protection SSH
-- ✅ SSL/TLS automatique avec Let's Encrypt
-- ✅ Connexion SSH par clé uniquement (pas de mot de passe)
-- ✅ Root login SSH désactivé
-- ✅ Mots de passe forts pour les bases de données
-- ✅ Variables sensibles dans .env (pas dans le code)
-- ✅ Headers de sécurité HTTP (via Traefik)
-- ✅ Rate limiting configuré
-- ✅ Logs rotatifs
-
-### Recommandations Supplémentaires
-
-1. **Changer le port SSH** (optionnel mais recommandé)
-   ```bash
-   sudo nano /etc/ssh/sshd_config
-   # Port 2222  # Au lieu de 22
-   sudo systemctl restart sshd
-   sudo ufw allow 2222/tcp
-   sudo ufw delete allow 22/tcp
-   ```
-
-2. **Activer l'authentification 2FA** pour SSH
-   ```bash
-   sudo apt-get install libpam-google-authenticator
-   google-authenticator
-   ```
-
-3. **Scanner régulièrement** les vulnérabilités
-   - GitHub Security Scan (automatique)
-   - Trivy pour les images Docker (automatique via CI/CD)
-
-4. **Monitorer les logs** avec un service externe (Sentry, LogRocket, etc.)
-
----
-
-## 🔧 Troubleshooting
-
-### Les conteneurs ne démarrent pas
-
-```bash
-# Vérifier les logs
-docker-compose logs
-
-# Vérifier l'état
-docker-compose ps
-
-# Redémarrer proprement
-docker-compose down
-docker-compose up -d
-```
-
-### Certificats SSL ne se génèrent pas
-
-```bash
-# Vérifier les logs Traefik
-docker-compose logs traefik
-
-# Vérifier que les domaines pointent vers le VPS
-dig admin.votredomaine.com
-
-# Vérifier les ports 80/443
-sudo netstat -tlnp | grep -E ':(80|443)'
-```
-
-### Base de données inaccessible
-
-```bash
-# Vérifier que MySQL est démarré
-docker-compose ps mysql
-
-# Tester la connexion
-docker-compose exec mysql mysql -u root -p
-
-# Recréer le conteneur MySQL si nécessaire
-docker-compose stop mysql
-docker-compose rm mysql
-docker-compose up -d mysql
-```
-
-### Application Laravel en erreur
-
-```bash
-# Vérifier les logs Laravel
-docker-compose exec admin tail -f storage/logs/laravel.log
-
-# Regénérer les caches
-docker-compose exec admin php artisan config:clear
 docker-compose exec admin php artisan cache:clear
+docker-compose exec admin php artisan config:clear
+docker-compose exec admin php artisan route:clear
 docker-compose exec admin php artisan view:clear
-docker-compose exec admin php artisan optimize
-
-# Vérifier les permissions
-docker-compose exec admin chown -R www-data:www-data storage bootstrap/cache
 ```
 
-### Espace disque plein
+### Nginx ne démarre pas
 
 ```bash
-# Vérifier l'utilisation
-df -h
+# Vérifier les logs nginx
+docker-compose logs nginx
 
-# Nettoyer Docker
-docker system prune -a --volumes
+# Tester la configuration nginx
+docker-compose exec nginx nginx -t
 
-# Nettoyer les logs
-docker-compose down
-sudo rm -rf /var/lib/docker/containers/*/*-json.log
-docker-compose up -d
+# Redémarrer nginx
+docker-compose restart nginx
 ```
 
-### Problèmes de performance
+### Base de données ne se connecte pas
+
+1. Vérifiez que MySQL est démarré : `docker-compose ps`
+2. Vérifiez les credentials dans les fichiers `.env`
+3. Vérifiez que le nom de la base de données existe
+4. Attendez que MySQL soit complètement démarré (peut prendre 30 secondes au premier démarrage)
+
+## 🔐 Sécurité
+
+### Recommandations importantes
+
+1. **Changez tous les mots de passe par défaut**
+2. **Configurez un firewall (UFW)**
 
 ```bash
-# Vérifier l'utilisation des ressources
-htop
-docker stats
-
-# Optimiser les bases de données
-docker-compose exec mysql mysqlcheck --optimize --all-databases -u root -p
-
-# Vider le cache Redis
-docker-compose exec redis redis-cli -a "${REDIS_PASSWORD}" FLUSHALL
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
 ```
 
----
+3. **Désactivez l'accès root SSH**
+
+```bash
+# Dans /etc/ssh/sshd_config
+PermitRootLogin no
+```
+
+4. **Configurez des backups automatiques**
+
+```bash
+# Ajoutez dans crontab -e
+0 2 * * * cd /var/www/fikaso && ./deploy.sh backup
+```
+
+5. **Surveillez les logs**
+
+```bash
+# Installer fail2ban
+apt install -y fail2ban
+```
+
+## 📈 Monitoring
+
+### Installer Portainer (Interface de gestion Docker)
+
+```bash
+docker volume create portainer_data
+docker run -d -p 9000:9000 --name portainer \
+    --restart=always \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v portainer_data:/data \
+    portainer/portainer-ce
+```
+
+Accédez à Portainer sur : `http://votre-vps-ip:9000`
 
 ## 📞 Support
 
-Pour obtenir de l'aide:
+Pour toute question ou problème :
+- Vérifiez les logs : `./deploy.sh logs`
+- Consultez la documentation Docker
+- Vérifiez les issues GitHub du projet
 
-1. Consultez les logs: `docker-compose logs -f`
-2. Vérifiez les issues GitHub du projet
-3. Contactez l'équipe de développement
+## 📝 Notes
 
----
-
-## 📝 Notes Importantes
-
-- **Ne commitez JAMAIS** le fichier `.env` dans Git
-- **Sauvegardez régulièrement** vos bases de données
-- **Testez toujours** en local avant de déployer en production
-- **Surveillez** les logs et les performances
-- **Mettez à jour** régulièrement les dépendances et les images Docker
-
----
-
-**Bon déploiement! 🚀**
+- Les volumes Docker persistent les données même après l'arrêt des conteneurs
+- Faites des backups réguliers de votre base de données
+- Surveillez l'utilisation des ressources avec `docker stats`
+- Mettez à jour régulièrement vos images Docker
 

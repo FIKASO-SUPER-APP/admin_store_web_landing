@@ -1,36 +1,9 @@
-# Environment files
 .env
-.env.local
-.env.production
-.env.*.local
-
-# Docker
-docker-compose.override.yml
-
-# Backups
-backups/
-*.sql
-*.tar.gz
-
-# Logs
-*.log
-logs/
-
-# Traefik
-traefik/acme.json
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Temporary files
-tmp/
-temp/
-
+backups/
+nginx/ssl/*
+!nginx/ssl/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+mysql_data/
+*.log

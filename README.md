@@ -1,354 +1,231 @@
-# 🛒 eMart / Fikaso - Multi-Panel E-Commerce Platform
+# 🚀 FIKASO - Plateforme Multi-Applications E-Commerce
 
-[![CI/CD](https://github.com/VOTRE_USERNAME/VOTRE_REPO/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/VOTRE_USERNAME/VOTRE_REPO/actions)
-[![Security Scan](https://github.com/VOTRE_USERNAME/VOTRE_REPO/workflows/Security%20Scan/badge.svg)](https://github.com/VOTRE_USERNAME/VOTRE_REPO/actions)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+FIKASO est une plateforme e-commerce complète composée de 4 applications :
 
-Plateforme e-commerce complète avec 4 applications interconnectées : Admin, Store, Website et Landing Page. Déployée avec Docker, Nginx/Traefik, et CI/CD automatisé.
+1. **Admin Panel** - Interface d'administration
+2. **Store Panel** - Interface pour les vendeurs
+3. **Website Panel** - Site web client
+4. **Landing Panel** - Page d'atterrissage
 
-## 📋 Table des Matières
+## 📚 Documentation
 
-- [Aperçu](#aperçu)
-- [Architecture](#architecture)
-- [Technologies](#technologies)
-- [Démarrage Rapide](#démarrage-rapide)
-- [Déploiement](#déploiement)
-- [Documentation](#documentation)
-- [License](#license)
-
----
-
-## 🎯 Aperçu
-
-**eMart/Fikaso** est une solution e-commerce multi-services comprenant :
-
-### Les 4 Applications
-
-1. **Admin Panel** 👨‍💼
-   - Gestion complète de la plateforme
-   - Multi-services (livraison, e-commerce, location, taxi, etc.)
-   - Gestion des utilisateurs, vendeurs, commandes
-   - Dashboard analytique
-   - Configuration système
-
-2. **Store Panel** 🏪
-   - Interface dédiée aux vendeurs/magasins
-   - Gestion des produits et inventaire
-   - Suivi des commandes
-   - Statistiques de ventes
-   - Gestion du profil magasin
-
-3. **Website Panel** 🛍️
-   - Site e-commerce public
-   - Catalogue de produits
-   - Panier et checkout
-   - Profils utilisateurs
-   - Système de commandes
-   - Support multi-services
-
-4. **Landing Page** 🎨
-   - Page marketing responsive
-   - Présentation de l'application mobile eMart
-   - Liens vers App Store / Google Play
-
----
+- **[Guide de Démarrage Rapide](QUICK-START.md)** - Déploiement en 5 minutes
+- **[Guide de Déploiement Complet](DEPLOYMENT.md)** - Documentation détaillée
 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────────┐
-│              Internet / Users                     │
-└───────────────────┬──────────────────────────────┘
-                    │
-                    ▼
-        ┌──────────────────────┐
-        │  Traefik (Port 443)  │
-        │  - SSL Automatique   │
-        │  - Load Balancing    │
-        └──────────┬───────────┘
-                   │
-        ┌──────────┴────────────┐
-        │                       │
-        ▼                       ▼
-┌──────────────┐      ┌──────────────┐
-│ Laravel Apps │      │Static Assets │
-│  - Admin     │      │  - Landing   │
-│  - Store     │      └──────────────┘
-│  - Website   │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────────────┐
-│   Infrastructure         │
-│  ┌────────┐ ┌─────────┐ │
-│  │ MySQL  │ │ Redis   │ │
-│  │ (DB)   │ │ (Cache) │ │
-│  └────────┘ └─────────┘ │
-└──────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Nginx Reverse Proxy                   │
+│                    (Port 80/443)                         │
+└────────┬────────────┬────────────┬────────────┬─────────┘
+         │            │            │            │
+    ┌────▼───┐  ┌────▼───┐  ┌────▼───┐  ┌────▼───┐
+    │ Admin  │  │ Store  │  │Website │  │Landing │
+    │ Panel  │  │ Panel  │  │ Panel  │  │ Panel  │
+    │ (PHP)  │  │ (PHP)  │  │ (PHP)  │  │ (HTML) │
+    └────┬───┘  └────┬───┘  └────┬───┘  └────────┘
+         │            │            │
+         └────────────┴────────────┘
+                      │
+                 ┌────▼────┐
+                 │  MySQL  │
+                 │  (8.0)  │
+                 └─────────┘
 ```
 
----
-
-## 🛠️ Technologies
-
-### Backend
-- **PHP 8.2** - Language
-- **Laravel 10** - Framework
-- **MySQL 8.0** - Database
-- **Redis 7** - Cache & Sessions
-
-### Frontend
-- **Bootstrap** - UI Framework
-- **jQuery** - JavaScript Library
-- **HTML5/CSS3** - Landing Page
-
-### Infrastructure
-- **Docker** - Containerization
-- **Docker Compose** - Orchestration
-- **Traefik v2** - Reverse Proxy & SSL
-- **Nginx** - Web Server (dans les conteneurs)
-- **Let's Encrypt** - SSL Certificates
-
-### CI/CD
-- **GitHub Actions** - Automation
-- **Trivy** - Security Scanning
-- **PHPUnit** - Testing
-
-### Paiements
-- Stripe
-- Razorpay
-- PayPal
-- Paystack
-- Xendit
-
----
-
-## 🚀 Démarrage Rapide
-
-### Prérequis
-
-- Docker 20.10+
-- Docker Compose 2.0+
-- Git
-
-### Installation Locale (Développement)
+## 🚀 Déploiement Rapide
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/VOTRE_USERNAME/VOTRE_REPO.git
-cd VOTRE_REPO
+# 1. Cloner le projet
+git clone <votre-repo> fikaso && cd fikaso
 
-# 2. Démarrer l'environnement de développement
-make dev
-
-# Ou sans Make:
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
-
-### Accès aux Applications
-
-Une fois démarrées, les applications sont accessibles sur :
-
-| Application | URL Locale | Port |
-|------------|------------|------|
-| Admin Panel | http://localhost:8001 | 8001 |
-| Store Panel | http://localhost:8002 | 8002 |
-| Website Panel | http://localhost:8003 | 8003 |
-| Landing Page | http://localhost:8004 | 8004 |
-| phpMyAdmin | http://localhost:8080 | 8080 |
-| Redis Commander | http://localhost:8081 | 8081 |
-| Mailhog | http://localhost:8025 | 8025 |
-
-### Commandes Utiles (avec Makefile)
-
-```bash
-# Voir toutes les commandes disponibles
-make help
-
-# Démarrer en développement
-make dev
-
-# Voir les logs
-make logs
-
-# Arrêter les services
-make dev-stop
-
-# Exécuter les migrations
-make migrate
-
-# Vider les caches
-make cache-clear
-
-# Créer un backup de la DB
-make db-backup
-
-# Exécuter les tests
-make test
-```
-
----
-
-## 📦 Déploiement en Production
-
-### Option 1: Script Automatique
-
-```bash
-# 1. Configurer le VPS (une seule fois)
-./scripts/setup-vps.sh
-
-# 2. Configurer les variables d'environnement
-cp .env.production.example .env
-nano .env  # Modifier avec vos valeurs
+# 2. Configuration
+cp env.example .env
+nano .env  # Modifiez vos paramètres
 
 # 3. Déployer
-./scripts/deploy.sh deploy
+chmod +x deploy.sh
+./deploy.sh start
 ```
 
-### Option 2: CI/CD avec GitHub Actions
+## 🛠️ Technologies Utilisées
 
-1. Configurez les secrets GitHub (voir [DEPLOYMENT.md](DEPLOYMENT.md))
-2. Push vers la branche `production`
-3. Le déploiement se fait automatiquement
+- **Backend** : PHP 8.1 + Laravel
+- **Frontend** : HTML, CSS, JavaScript
+- **Base de données** : MySQL 8.0
+- **Conteneurisation** : Docker + Docker Compose
+- **Reverse Proxy** : Nginx
+- **SSL** : Let's Encrypt (Certbot)
 
-### Option 3: Manuel avec Docker Compose
+## 📦 Composants Docker
 
-```bash
-# Build et démarrer
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+| Service | Image | Port | Description |
+|---------|-------|------|-------------|
+| admin | Custom (PHP 8.1-FPM + Nginx) | - | Panel d'administration |
+| store | Custom (PHP 8.1-FPM + Nginx) | - | Panel vendeur |
+| website | Custom (PHP 8.1-FPM + Nginx) | - | Site web client |
+| landing | Custom (Nginx Alpine) | - | Page d'atterrissage |
+| mysql | mysql:8.0 | 3306 | Base de données |
+| nginx | nginx:alpine | 80, 443 | Reverse proxy |
 
-# Vérifier l'état
-docker-compose ps
+## 🔧 Scripts Disponibles
 
-# Voir les logs
-docker-compose logs -f
-```
+| Script | Description |
+|--------|-------------|
+| `./deploy.sh start` | Démarrer tous les services |
+| `./deploy.sh stop` | Arrêter tous les services |
+| `./deploy.sh restart` | Redémarrer tous les services |
+| `./deploy.sh logs` | Afficher les logs |
+| `./deploy.sh update` | Mettre à jour les applications |
+| `./deploy.sh backup` | Backup de la base de données |
+| `./setup-ssl.sh` | Configurer SSL/HTTPS |
 
----
+## 🌐 URLs des Applications
 
-## 📚 Documentation
+Après le déploiement, vos applications seront accessibles sur :
 
-- **[Guide de Déploiement Complet](DEPLOYMENT.md)** - Instructions détaillées pour le déploiement
-- **[Architecture](docs/architecture.md)** - Détails de l'architecture système
-- **[Sécurité](docs/security.md)** - Bonnes pratiques de sécurité
-- **[API Documentation](docs/api.md)** - Documentation des APIs
-- **[Troubleshooting](docs/troubleshooting.md)** - Résolution de problèmes
+- **Admin** : `http://admin.votredomaine.com`
+- **Store** : `http://store.votredomaine.com`
+- **Website** : `http://votredomaine.com`
+- **Landing** : `http://www.votredomaine.com`
 
----
+## 📋 Prérequis
+
+- VPS avec Ubuntu 20.04+ ou Debian 10+
+- Docker & Docker Compose
+- Minimum 2GB RAM, 2 CPU cores
+- Noms de domaine configurés
+- Accès root/sudo
 
 ## 🔒 Sécurité
 
-### Fonctionnalités de Sécurité
-
-- ✅ SSL/TLS automatique avec Let's Encrypt
-- ✅ Firewall UFW configuré
-- ✅ Fail2Ban pour protection SSH
-- ✅ Headers de sécurité HTTP
-- ✅ Rate limiting
-- ✅ Scan automatique des vulnérabilités
-- ✅ Authentification forte
-- ✅ Mots de passe hashés
-- ✅ Variables d'environnement sécurisées
-
-### Signaler une Vulnérabilité
-
-Si vous découvrez une faille de sécurité, merci de nous contacter à security@votredomaine.com au lieu de créer une issue publique.
-
----
-
-## 🧪 Tests
-
-```bash
-# Tests unitaires
-make test
-
-# Tests avec couverture de code
-docker-compose exec admin vendor/bin/phpunit --coverage-html coverage
-
-# Lint PHP
-docker-compose exec admin ./vendor/bin/phpcs
-
-# Fix code style
-docker-compose exec admin ./vendor/bin/phpcbf
-```
-
----
+- ✅ Variables d'environnement séparées
+- ✅ Support SSL/TLS (Let's Encrypt)
+- ✅ Headers de sécurité Nginx
+- ✅ Isolation des conteneurs Docker
+- ✅ Gestion des permissions
+- ✅ Backups automatiques
 
 ## 📊 Monitoring
 
-### Logs
+Les logs sont disponibles via :
 
 ```bash
-# Tous les services
+# Tous les logs
+./deploy.sh logs
+
+# Un service spécifique
+./deploy.sh logs admin
+./deploy.sh logs nginx
+./deploy.sh logs mysql
+
+# Logs en temps réel
 docker-compose logs -f
-
-# Service spécifique
-docker-compose logs -f admin
-
-# Dernières 100 lignes
-docker-compose logs --tail=100
 ```
 
-### Métriques
-
-- **Traefik Dashboard**: `https://traefik.votredomaine.com`
-- **phpMyAdmin**: `http://localhost:8080` (dev)
-- **Redis Commander**: `http://localhost:8081` (dev)
-
-### Ressources
+## 🔄 Mise à Jour
 
 ```bash
-# Utilisation des ressources
-docker stats
+# Pull les derniers changements
+git pull
 
-# Avec ctop (plus joli)
-ctop
+# Mettre à jour et redémarrer
+./deploy.sh update
 ```
 
----
+## 💾 Backup
+
+```bash
+# Backup manuel
+./deploy.sh backup
+
+# Backup automatique (crontab)
+0 2 * * * cd /var/www/fikaso && ./deploy.sh backup
+```
+
+## 🐛 Dépannage
+
+### Les conteneurs ne démarrent pas
+```bash
+docker-compose ps
+docker-compose logs
+```
+
+### Erreur de base de données
+```bash
+docker-compose restart mysql
+docker-compose exec mysql mysql -u root -p
+```
+
+### Erreur de permissions
+```bash
+docker-compose exec admin chmod -R 775 storage bootstrap/cache
+```
+
+### Clear cache Laravel
+```bash
+docker-compose exec admin php artisan cache:clear
+docker-compose exec admin php artisan config:clear
+```
+
+## 📖 Structure des Fichiers
+
+```
+.
+├── Admin Panel/              # Application Admin Laravel
+│   ├── Dockerfile
+│   └── docker/nginx.conf
+├── Store Panel/              # Application Store Laravel
+│   ├── Dockerfile
+│   └── docker/nginx.conf
+├── Website Panel/            # Application Website Laravel
+│   ├── Dockerfile
+│   └── docker/nginx.conf
+├── Landing Panel/            # Application Landing HTML
+│   ├── Dockerfile
+│   └── nginx.conf
+├── nginx/                    # Configuration Nginx
+│   ├── nginx.conf
+│   ├── conf.d/
+│   │   ├── admin.conf
+│   │   ├── store.conf
+│   │   ├── website.conf
+│   │   └── landing.conf
+│   └── ssl/                  # Certificats SSL
+├── docker-compose.yml        # Orchestration Docker
+├── deploy.sh                 # Script de déploiement
+├── setup-ssl.sh             # Script SSL
+├── env.example              # Variables d'environnement
+├── DEPLOYMENT.md            # Guide complet
+├── QUICK-START.md           # Guide rapide
+└── README.md                # Ce fichier
+```
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Veuillez consulter [CONTRIBUTING.md](CONTRIBUTING.md) pour les détails.
-
-### Workflow
-
 1. Fork le projet
-2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
+2. Créez une branche (`git checkout -b feature/AmazingFeature`)
+3. Commit vos changements (`git commit -m 'Add AmazingFeature'`)
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
 
----
+## 📄 Licence
 
-## 📝 License
+Ce projet est sous licence propriétaire. Tous droits réservés.
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+## 👥 Support
 
----
+Pour toute question ou problème :
+- Consultez la [Documentation](DEPLOYMENT.md)
+- Vérifiez les logs : `./deploy.sh logs`
+- Contactez l'équipe de support
 
-## 👥 Équipe
+## 🎉 Remerciements
 
-- **Développeur Principal** - [Votre Nom](https://github.com/bouba-34)
-- **DevOps** - [Nom](https://github.com/bouba-34)
-
----
-
-## 🙏 Remerciements
-
-- Laravel Framework
-- Docker & Docker Compose
-- Traefik
-- Tous les contributeurs open-source
+Merci d'utiliser FIKASO ! 🚀
 
 ---
 
-## 📞 Support
+**Note** : Assurez-vous de sécuriser votre production en changeant tous les mots de passe par défaut et en configurant SSL.
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/FIKASO-SUPER-APP/admin_store_web_landing/issues)
-- **Email**: support@fikasoplus.com
-
----
-
-**Fait avec ❤️ par l'équipe Fikaso**
