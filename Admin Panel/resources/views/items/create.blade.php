@@ -1164,7 +1164,7 @@
                 
                 if (isRestaurantSection) {
                     // NEW LOGIC FOR RESTAURANTS
-                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '">';
+                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-name="' + attrName + '" data-attr-index="' + attributeIndex + '">';
                     html += '<div class="col-md-12">';
                     html += '<div class="card">';
                     html += '<div class="card-header bg-light">';
@@ -1581,6 +1581,7 @@
             
             $('.attribute-item').each(function() {
                 var attrId = $(this).data('attr-id');
+                var attrName = $(this).data('attr-name'); // ✅ Récupérer le nom de l'attribut
                 var attrIndex = $(this).data('attr-index');
                 
                 var selectType = $('#select_type_' + attrId).val();
@@ -1604,6 +1605,7 @@
                 if (variantOptions.length > 0) {
                     attributes.push({
                         attribute_id: attrId,
+                        attribute_name: attrName, // ✅ Ajouter le nom de l'attribut
                         select_type: selectType,
                         min_select: parseInt(minSelect),
                         max_select: parseInt(maxSelect),

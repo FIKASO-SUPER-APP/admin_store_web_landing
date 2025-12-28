@@ -683,7 +683,7 @@
                             // NEW LOGIC FOR RESTAURANTS - Collect attribute data from the new UI
                             $('.attribute-item').each(function() {
                                 var attrId = $(this).data('attr-id');
-                                var attrName = $(this).find('.card-header h5').text();
+                                var attrName = $(this).data('attr-name'); // ✅ Utiliser data-attr-name au lieu de .text()
                                 var selectType = $('#select_type_' + attrId).val();
                                 var minSelect = $('#min_select_' + attrId).val();
                                 var maxSelect = $('#max_select_' + attrId).val();
@@ -702,14 +702,17 @@
                                     }
                                 });
                                 
-                                attributes.push({
-                                    attribute_id: attrId,
-                                    attribute_name: attrName,
-                                    select_type: selectType,
-                                    min_select: (selectType === 'multiple' && minSelect) ? parseInt(minSelect) : null,
-                                    max_select: (selectType === 'multiple' && maxSelect) ? parseInt(maxSelect) : null,
-                                    attribute_options: variantOptions
-                                });
+                                // ✅ Ajouter uniquement si des options existent
+                                if (variantOptions.length > 0) {
+                                    attributes.push({
+                                        attribute_id: attrId,
+                                        attribute_name: attrName,
+                                        select_type: selectType,
+                                        min_select: (selectType === 'multiple' && minSelect) ? parseInt(minSelect) : null,
+                                        max_select: (selectType === 'multiple' && maxSelect) ? parseInt(maxSelect) : null,
+                                        attribute_options: variantOptions
+                                    });
+                                }
                             });
                             
                             // No automatic variants for restaurants
@@ -1128,7 +1131,7 @@
                 
                 if (isRestaurantSection) {
                     // NEW LOGIC FOR RESTAURANTS
-                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '">';
+                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-name="' + attrName + '" data-attr-index="' + attributeIndex + '">';
                     html += '<div class="col-md-12">';
                     html += '<div class="card">';
                     html += '<div class="card-header bg-light">';

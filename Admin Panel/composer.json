@@ -19,7 +19,8 @@
     "paypal/paypal-payouts-sdk": "^1.0",
     "paytm/paytmchecksum": "^1.1",
     "razorpay/razorpay": "2.*",
-    "stripe/stripe-php": "^7.116"
+    "stripe/stripe-php": "^7.116",
+    "ext-pdo": "*"
   },
   "require-dev": {
     "spatie/laravel-ignition": "^2.0",
