@@ -336,6 +336,7 @@
         var currencyAtRight = false;
         var decimal_degits = 0;
         var categories_list=[];
+        var sectionData = null; // ✅ Ajouter cette variable pour stocker les données de la section
         var subscriptionBusinessModel = database.collection('settings').doc("vendor");
         subscriptionBusinessModel.get().then(async function(snapshots) {
                 var subscriptionSetting = snapshots.data();
@@ -379,6 +380,7 @@
                 var section = database.collection('sections').where('id', '==', section_id);
                 await section.get().then(async function(snapshots) {
                     var section_data = snapshots.docs[0].data();
+                    sectionData = section_data; // ✅ Stocker les données de la section
                     section_flag = section_data.serviceTypeFlag;
 
                     if (section_data.serviceTypeFlag == "ecommerce-service") {
@@ -673,68 +675,120 @@
                         //start-item attribute
                         var attributes = [];
                         var variants = [];
-
-                        if ($('#attributes').val().length > 0) {
-                            var attributes = $.parseJSON($('#attributes').val());
-                        }
-                        if ($('#variants').val().length > 0) {
-                            var variantsSet = $.parseJSON($('#variants').val());
-                            var isValid = false; // Flag to track validation
-                            await storeVariantImageData().then(async (vIMG) => {
-
-                                $.each(variantsSet, function(key, variant) {
-                                    var variant_id = uniqid();
-                                    var variant_sku = variant;
-                                    var variant_price = $('#price_' +
-                                        variant).val();
-                                    var variant_quantity = $('#qty_' +
-                                        variant).val();
-                                    var variant_image = $('#variant_' +
-                                        variant + '_url').val();
-
-                                    // Validation for variant_price
-                                    if (!variant_price || parseFloat(
-                                            variant_price) <= 0) {
-                                        $(".error_top").show();
-                                        $(".error_top").html("");
-                                        $(".error_top").append(
-                                            "<p>{{ trans('lang.enter_positive_variant_price_error') }}</p>"
-                                        );
-                                        window.scrollTo(0, 0);
-                                        isValid = true;
-                                        return false; // Exit loop
+                        
+                        // ✅ Check if we're in a restaurant section
+                        var isRestaurantSection = (sectionData && sectionData.serviceTypeFlag == "delivery-service");
+                        
+                        if (isRestaurantSection) {
+                            // NEW LOGIC FOR RESTAURANTS - Collect attribute data from the new UI
+                            $('.attribute-item').each(function() {
+                                var attrId = $(this).data('attr-id');
+                                var attrName = $(this).find('.card-header h5').text();
+                                var selectType = $('#select_type_' + attrId).val();
+                                var minSelect = $('#min_select_' + attrId).val();
+                                var maxSelect = $('#max_select_' + attrId).val();
+                                
+                                // Collect variant options with prices
+                                var variantOptions = [];
+                                $('#variant_options_' + attrId + ' .variant-option-row').each(function() {
+                                    var optionName = $(this).find('.variant-option-name').val();
+                                    var optionPrice = $(this).find('.variant-option-price').val();
+                                    
+                                    if (optionName && optionPrice) {
+                                        variantOptions.push({
+                                            name: optionName.trim(),
+                                            price: parseFloat(optionPrice)
+                                        });
                                     }
-
-                                    variants.push({
-                                        'variant_id': variant_id,
-                                        'variant_sku': variant_sku,
-                                        'variant_price': variant_price,
-                                        'variant_quantity': variant_quantity,
-                                        'variant_image': variant_image
-                                    });
                                 });
-
-                            }).catch(err => {
-                                jQuery("#data-table_processing").hide();
-                                $(".error_top").show();
-                                $(".error_top").html("");
-                                $(".error_top").append("<p>" + err + "</p>");
-                                window.scrollTo(0, 0);
+                                
+                                attributes.push({
+                                    attribute_id: attrId,
+                                    attribute_name: attrName,
+                                    select_type: selectType,
+                                    min_select: (selectType === 'multiple' && minSelect) ? parseInt(minSelect) : null,
+                                    max_select: (selectType === 'multiple' && maxSelect) ? parseInt(maxSelect) : null,
+                                    attribute_options: variantOptions
+                                });
                             });
-                            if (isValid) {
-                                return;
+                            
+                            // No automatic variants for restaurants
+                            variants = [];
+                            
+                        } else {
+                            // OLD E-COMMERCE LOGIC
+                            if ($('#attributes').val().length > 0) {
+                                var attributes = $.parseJSON($('#attributes').val());
+                            }
+                            if ($('#variants').val().length > 0) {
+                                var variantsSet = $.parseJSON($('#variants').val());
+                                var isValid = false; // Flag to track validation
+                                await storeVariantImageData().then(async (vIMG) => {
+
+                                    $.each(variantsSet, function(key, variant) {
+                                        var variant_id = uniqid();
+                                        var variant_sku = variant;
+                                        var variant_price = $('#price_' +
+                                            variant).val();
+                                        var variant_quantity = $('#qty_' +
+                                            variant).val();
+                                        var variant_image = $('#variant_' +
+                                            variant + '_url').val();
+
+                                        // Validation for variant_price
+                                        if (!variant_price || parseFloat(
+                                                variant_price) <= 0) {
+                                            $(".error_top").show();
+                                            $(".error_top").html("");
+                                            $(".error_top").append(
+                                                "<p>{{ trans('lang.enter_positive_variant_price_error') }}</p>"
+                                            );
+                                            window.scrollTo(0, 0);
+                                            isValid = true;
+                                            return false; // Exit loop
+                                        }
+
+                                        variants.push({
+                                            'variant_id': variant_id,
+                                            'variant_sku': variant_sku,
+                                            'variant_price': variant_price,
+                                            'variant_quantity': variant_quantity,
+                                            'variant_image': variant_image
+                                        });
+                                    });
+
+                                }).catch(err => {
+                                    jQuery("#data-table_processing").hide();
+                                    $(".error_top").show();
+                                    $(".error_top").html("");
+                                    $(".error_top").append("<p>" + err + "</p>");
+                                    window.scrollTo(0, 0);
+                                });
+                                if (isValid) {
+                                    return;
+
+                                }
+                                $(".error_top").hide().html("");
 
                             }
-                            $(".error_top").hide().html("");
-
                         }
 
                         var item_attribute = null;
-                        if (attributes.length > 0 && variants.length > 0) {
-                            var item_attribute = {
-                                'attributes': attributes,
-                                'variants': variants
-                            };
+                        if (attributes.length > 0) {
+                            if (isRestaurantSection) {
+                                // For restaurants: new structure without variants
+                                item_attribute = {
+                                    'attributes': attributes
+                                };
+                            } else {
+                                // For e-commerce: old structure with variants
+                                if (variants.length > 0) {
+                                    item_attribute = {
+                                        'attributes': attributes,
+                                        'variants': variants
+                                    };
+                                }
+                            }
                         }
                         //end-item attribute
                         jQuery("#data-table_processing").show();
@@ -1023,28 +1077,149 @@
             $("#add_product_specification_iteam_" + index).hide();
         }
 
+        // ✅ New function to toggle min/max fields
+        function toggleMinMaxFields(attrId) {
+            var selectType = $('#select_type_' + attrId).val();
+            if (selectType === 'multiple') {
+                $('#min_max_' + attrId).show();
+            } else {
+                $('#min_max_' + attrId).hide();
+            }
+        }
+        
+        // ✅ New function to add variant option
+        var variantOptionCounters = {};
+        function addVariantOption(attrId) {
+            if (!variantOptionCounters[attrId]) {
+                variantOptionCounters[attrId] = 0;
+            }
+            var optionIndex = variantOptionCounters[attrId]++;
+            
+            var html = '<div class="row mb-2 variant-option-row" id="variant_option_' + attrId + '_' + optionIndex + '">';
+            html += '<div class="col-md-5">';
+            html += '<input type="text" class="form-control variant-option-name" placeholder="Option name (e.g., Small)" required>';
+            html += '</div>';
+            html += '<div class="col-md-5">';
+            html += '<input type="number" class="form-control variant-option-price" placeholder="Price" step="0.01" min="0" required>';
+            html += '</div>';
+            html += '<div class="col-md-2">';
+            html += '<button type="button" class="btn btn-sm btn-danger" onclick="removeVariantOption(\'' + attrId + '\', ' + optionIndex + ')"><i class="fa fa-trash"></i></button>';
+            html += '</div>';
+            html += '</div>';
+            
+            $('#variant_options_' + attrId).append(html);
+        }
+        
+        // ✅ New function to remove variant option
+        function removeVariantOption(attrId, optionIndex) {
+            $('#variant_option_' + attrId + '_' + optionIndex).remove();
+        }
+
         function selectAttribute() {
             var html = '';
+            var attributeIndex = 0;
+            
+            // Check if we're in delivery-service (restaurant) section
+            var isRestaurantSection = (sectionData && sectionData.serviceTypeFlag == "delivery-service");
+            
             $("#item_attribute").find('option:selected').each(function() {
-                html += '<div class="row">';
-                html += '<div class="col-md-3">';
-                html += '<label>' + $(this).text() + '</label>';
-                html += '</div>';
-                html += '<div class="col-lg-9">';
-                html += '<input type="text" class="form-control" id="attribute_options_' + $(this).val() +
-                    '" placeholder="Add attribute values" data-role="tagsinput" onchange="variants_update()">';
-                html += '</div>';
-                html += '</div>';
+                var attrId = $(this).val();
+                var attrName = $(this).text();
+                
+                if (isRestaurantSection) {
+                    // NEW LOGIC FOR RESTAURANTS
+                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '">';
+                    html += '<div class="col-md-12">';
+                    html += '<div class="card">';
+                    html += '<div class="card-header bg-light">';
+                    html += '<h5 class="mb-0">' + attrName + '</h5>';
+                    html += '</div>';
+                    html += '<div class="card-body">';
+                    
+                    // Select Type
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Select Type <span class="text-danger">*</span></label>';
+                    html += '<select class="form-control attribute-select-type" id="select_type_' + attrId + '" onchange="toggleMinMaxFields(\'' + attrId + '\')">';
+                    html += '<option value="single">Single (one choice)</option>';
+                    html += '<option value="multiple">Multiple (multiple choices)</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Min/Max fields (hidden by default)
+                    html += '<div class="row mb-3 min-max-fields" id="min_max_' + attrId + '" style="display:none;">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Min Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="min_select_' + attrId + '" min="1" value="1">';
+                    html += '</div>';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Max Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="max_select_' + attrId + '" min="1" value="1">';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Variant values with prices
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-12">';
+                    html += '<label>Variant Options <span class="text-danger">*</span></label>';
+                    html += '<button type="button" class="btn btn-sm btn-primary float-right" onclick="addVariantOption(\'' + attrId + '\')">Add Option</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    html += '<div id="variant_options_' + attrId + '" class="variant-options-container">';
+                    html += '</div>';
+                    
+                    html += '</div>'; // card-body
+                    html += '</div>'; // card
+                    html += '</div>'; // col
+                    html += '</div>'; // row
+                } else {
+                    // OLD LOGIC FOR E-COMMERCE (unchanged)
+                    html += '<div class="row">';
+                    html += '<div class="col-md-3">';
+                    html += '<label>' + attrName + '</label>';
+                    html += '</div>';
+                    html += '<div class="col-lg-9">';
+                    html += '<input type="text" class="form-control" id="attribute_options_' + attrId +
+                        '" placeholder="Add attribute values" data-role="tagsinput" onchange="variants_update()">';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                attributeIndex++;
             });
+            
             $("#item_attributes").html(html);
-            $("#item_attributes input[data-role=tagsinput]").tagsinput();
+            
+            if (!isRestaurantSection) {
+                $("#item_attributes input[data-role=tagsinput]").tagsinput();
+            }
+            
             $("#attributes").val('');
             $("#variants").val('');
             $("#item_variants").html('');
+            
+            // ✅ Ajouter automatiquement une première ligne d'option pour chaque attribut restaurant
+            if (isRestaurantSection) {
+                $("#item_attribute").find('option:selected').each(function() {
+                    var attrId = $(this).val();
+                    addVariantOption(attrId); // Ajouter automatiquement la première option
+                });
+            }
         }
 
 
         function variants_update() {
+            // ✅ Only for e-commerce - restaurants don't use this
+            var isRestaurantSection = (sectionData && sectionData.serviceTypeFlag == "delivery-service");
+            
+            if (isRestaurantSection) {
+                // NO AUTOMATIC VARIANT GENERATION FOR RESTAURANTS
+                $("#item_variants").html('');
+                return;
+            }
+            
+            // OLD E-COMMERCE LOGIC
             var html = '';
             variant_photos = [];
             variant_vIds = [];

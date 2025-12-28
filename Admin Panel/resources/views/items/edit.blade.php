@@ -124,6 +124,25 @@
                                 <input type="hidden" id="attributes" value="" />
                                 <input type="hidden" id="variants" value="" />
                             </div>
+                            
+                            <!-- CONSTRAINTS SECTION FOR RESTAURANTS -->
+                            <div class="form-group row width-100" id="constraints_section" style="display:none;">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0">Attribute Constraints (Advanced)</h5>
+                                            <small>Define rules between attributes (e.g., if Size=1L then Flavor max=1)</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <button type="button" class="btn btn-sm btn-primary mb-3" onclick="addConstraint()">
+                                                <i class="fa fa-plus"></i> Add Constraint
+                                            </button>
+                                            <div id="constraints_container"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="form-group row width-100">
                                 <label class="col-3 control-label">{{ trans('lang.item_image') }}</label>
                                 <div class="col-7">
@@ -713,80 +732,132 @@
                     var priceerror = 0;
                     var attributes = [];
                     var variants = [];
-                    if ($("#item_attribute").val().length > 0) {
-                        if ($('#attributes').val().length > 0) {
-                            var attributes = $.parseJSON($('#attributes').val());
-                        } else {
-                            alert('Please add your attribute value');
-                            return false;
-                        }
-                        if ($("#item_attribute").val().length !== attributes.length) {
-                            alert('Please add your attribute value');
-                            return false;
-                        }
-                    }
                     
-                    if ($('#variants').val().length > 0) {
-                        var variantsSet = $.parseJSON($('#variants').val());
-                        await storeVariantImageData().then(async (vIMG) => {
-                            $.each(variantsSet, function(key, variant) {
-                                var variant_id = uniqid();
-                                var variant_sku = variant;
-                                var variant_price = $('#price_' + variant).val();
-                                var variant_quantity = $('#qty_' + variant).val();
-                                if (variant_price == "" || variant_price == 0 || variant_quantity == "") {
-                                    error++;
+                    // Check if restaurant section
+                    var isRestaurantSection = (sectionData && sectionData.serviceTypeFlag == "delivery-service");
+                    
+                    if (isRestaurantSection && $("#item_attribute").val().length > 0) {
+                        // NEW RESTAURANT LOGIC
+                        var restaurantAttributes = collectRestaurantAttributes();
+                        var attributeConstraints = collectAttributeConstraints();
+                        
+                        if (restaurantAttributes.length === 0) {
+                            alert('Please add at least one option to each selected attribute');
+                            return false;
+                        }
+                        
+                        // Validate that each attribute has at least one option
+                        var hasError = false;
+                        restaurantAttributes.forEach(function(attr) {
+                            if (attr.options.length === 0) {
+                                alert('Please add at least one option for all attributes');
+                                hasError = true;
+                                return false;
+                            }
+                            
+                            // Validate min/max for multiple select
+                            if (attr.select_type === 'multiple') {
+                                if (attr.max_select < attr.min_select) {
+                                    alert('Max select must be greater than or equal to min select');
+                                    hasError = true;
+                                    return false;
                                 }
-                                var variant_image = $('#variant_' + variant + '_url').val();
-                                if (variant_image) {
-                                    variants.push({
-                                        'variant_id': variant_id,
-                                        'variant_sku': variant_sku,
-                                        'variant_price': variant_price,
-                                        'variant_quantity': variant_quantity,
-                                        'variant_image': variant_image
-                                    });
-                                } else {
-                                    variants.push({
-                                        'variant_id': variant_id,
-                                        'variant_sku': variant_sku,
-                                        'variant_price': variant_price,
-                                        'variant_quantity': variant_quantity
-                                    });
+                                if (attr.max_select > attr.options.length) {
+                                    alert('Max select cannot be greater than the number of options');
+                                    hasError = true;
+                                    return false;
                                 }
-                                if (variant_quantity = '' || variant_quantity < -1 || variant_quantity == 0) {
-                                    quantityerror++;
-                                }
-                                if (variant_price == "" || variant_price <= 0) {
-                                    priceerror++;
-                                }
-                            });
-                        }).catch(err => {
-                            jQuery("#data-table_processing").hide();
-                            $(".error_top").show();
-                            $(".error_top").html("");
-                            $(".error_top").append("<p>" + err + "</p>");
-                            window.scrollTo(0, 0);
+                            }
                         });
-                    }
-
-                    if (attributes.length > 0 && variants.length > 0) {
-                        if (error > 0) {
-                            alert('Please add your variants price');
+                        
+                        if (hasError) {
                             return false;
                         }
-                        if (quantityerror > 0) {
-                            alert('Please add your variants quantity it should be -1 or greater than -1');
-                            return false;
-                        }
-                        if (priceerror > 0) {
-                            alert('Please add your variants  Price');
-                            return false;
-                        }
-                        var item_attribute = {
-                            'attributes': attributes,
-                            'variants': variants
+                        
+                        item_attribute = {
+                            'type': 'restaurant',
+                            'attributes': restaurantAttributes,
+                            'constraints': attributeConstraints
                         };
+                        
+                    } else if (!isRestaurantSection) {
+                        // OLD E-COMMERCE LOGIC
+                        if ($("#item_attribute").val().length > 0) {
+                            if ($('#attributes').val().length > 0) {
+                                var attributes = $.parseJSON($('#attributes').val());
+                            } else {
+                                alert('Please add your attribute value');
+                                return false;
+                            }
+                            if ($("#item_attribute").val().length !== attributes.length) {
+                                alert('Please add your attribute value');
+                                return false;
+                            }
+                        }
+                        
+                        if ($('#variants').val().length > 0) {
+                            var variantsSet = $.parseJSON($('#variants').val());
+                            await storeVariantImageData().then(async (vIMG) => {
+                                $.each(variantsSet, function(key, variant) {
+                                    var variant_id = uniqid();
+                                    var variant_sku = variant;
+                                    var variant_price = $('#price_' + variant).val();
+                                    var variant_quantity = $('#qty_' + variant).val();
+                                    if (variant_price == "" || variant_price == 0 || variant_quantity == "") {
+                                        error++;
+                                    }
+                                    var variant_image = $('#variant_' + variant + '_url').val();
+                                    if (variant_image) {
+                                        variants.push({
+                                            'variant_id': variant_id,
+                                            'variant_sku': variant_sku,
+                                            'variant_price': variant_price,
+                                            'variant_quantity': variant_quantity,
+                                            'variant_image': variant_image
+                                        });
+                                    } else {
+                                        variants.push({
+                                            'variant_id': variant_id,
+                                            'variant_sku': variant_sku,
+                                            'variant_price': variant_price,
+                                            'variant_quantity': variant_quantity
+                                        });
+                                    }
+                                    if (variant_quantity = '' || variant_quantity < -1 || variant_quantity == 0) {
+                                        quantityerror++;
+                                    }
+                                    if (variant_price == "" || variant_price <= 0) {
+                                        priceerror++;
+                                    }
+                                });
+                            }).catch(err => {
+                                jQuery("#data-table_processing").hide();
+                                $(".error_top").show();
+                                $(".error_top").html("");
+                                $(".error_top").append("<p>" + err + "</p>");
+                                window.scrollTo(0, 0);
+                            });
+                        }
+
+                        if (attributes.length > 0 && variants.length > 0) {
+                            if (error > 0) {
+                                alert('Please add your variants price');
+                                return false;
+                            }
+                            if (quantityerror > 0) {
+                                alert('Please add your variants quantity it should be -1 or greater than -1');
+                                return false;
+                            }
+                            if (priceerror > 0) {
+                                alert('Please add your variants  Price');
+                                return false;
+                            }
+                            item_attribute = {
+                                'type': 'ecommerce',
+                                'attributes': attributes,
+                                'variants': variants
+                            };
+                        }
                     }
 
                     if ($.isEmptyObject(product_specification)) {
@@ -1223,32 +1294,194 @@
             if (item_attribute) {
                 var item_attribute = $.parseJSON(atob(item_attribute));
             }
+            
             var html = '';
+            var attributeIndex = 0;
+            
+            // Check if we're in delivery-service (restaurant) section
+            var isRestaurantSection = (sectionData && sectionData.serviceTypeFlag == "delivery-service");
+            
             $("#item_attribute").find('option:selected').each(function() {
                 var $this = $(this);
-                var selected_options = [];
-                if (item_attribute) {
-                    $.each(item_attribute.attributes, function(index, attribute) {
-                        if ($this.val() == attribute.attribute_id) {
-                            selected_options.push(attribute.attribute_options);
+                var attrId = $this.val();
+                var attrName = $this.text();
+                
+                if (isRestaurantSection && item_attribute && item_attribute.type === 'restaurant') {
+                    // NEW LOGIC FOR RESTAURANTS - EDIT MODE
+                    var existingAttr = null;
+                    if (item_attribute && item_attribute.attributes) {
+                        existingAttr = item_attribute.attributes.find(function(attr) {
+                            return attr.attribute_id === attrId;
+                        });
+                    }
+                    
+                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '">';
+                    html += '<div class="col-md-12">';
+                    html += '<div class="card">';
+                    html += '<div class="card-header bg-light">';
+                    html += '<h5 class="mb-0">' + attrName + '</h5>';
+                    html += '</div>';
+                    html += '<div class="card-body">';
+                    
+                    var selectType = existingAttr ? existingAttr.select_type : 'single';
+                    var minSelect = existingAttr ? existingAttr.min_select : 1;
+                    var maxSelect = existingAttr ? existingAttr.max_select : 1;
+                    
+                    // Select Type
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Select Type <span class="text-danger">*</span></label>';
+                    html += '<select class="form-control attribute-select-type" id="select_type_' + attrId + '" onchange="toggleMinMaxFields(' + attrId + ')">';
+                    html += '<option value="single" ' + (selectType === 'single' ? 'selected' : '') + '>Single (one choice)</option>';
+                    html += '<option value="multiple" ' + (selectType === 'multiple' ? 'selected' : '') + '>Multiple (multiple choices)</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Min/Max fields
+                    var minMaxDisplay = selectType === 'multiple' ? '' : 'none';
+                    html += '<div class="row mb-3 min-max-fields" id="min_max_' + attrId + '" style="display:' + minMaxDisplay + ';">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Min Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="min_select_' + attrId + '" min="1" value="' + minSelect + '">';
+                    html += '</div>';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Max Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="max_select_' + attrId + '" min="1" value="' + maxSelect + '">';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Variant values with prices
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-12">';
+                    html += '<label>Variant Options <span class="text-danger">*</span></label>';
+                    html += '<button type="button" class="btn btn-sm btn-primary float-right" onclick="addVariantOption(' + attrId + ')">Add Option</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    html += '<div id="variant_options_' + attrId + '" class="variant-options-container">';
+                    
+                    // Add existing options
+                    if (existingAttr && existingAttr.options) {
+                        if (!variantOptionCounters[attrId]) {
+                            variantOptionCounters[attrId] = 0;
                         }
-                    });
+                        existingAttr.options.forEach(function(option) {
+                            var optionIndex = variantOptionCounters[attrId]++;
+                            html += '<div class="row mb-2 variant-option-row" id="variant_option_' + attrId + '_' + optionIndex + '">';
+                            html += '<div class="col-md-5">';
+                            html += '<input type="text" class="form-control variant-option-name" placeholder="Option name" value="' + option.name + '" required>';
+                            html += '</div>';
+                            html += '<div class="col-md-5">';
+                            html += '<input type="number" class="form-control variant-option-price" placeholder="Price" step="0.01" min="0" value="' + option.price + '" required>';
+                            html += '</div>';
+                            html += '<div class="col-md-2">';
+                            html += '<button type="button" class="btn btn-sm btn-danger" onclick="removeVariantOption(' + attrId + ', ' + optionIndex + ')"><i class="fa fa-trash"></i></button>';
+                            html += '</div>';
+                            html += '</div>';
+                        });
+                    }
+                    
+                    html += '</div>';
+                    
+                    html += '</div>'; // card-body
+                    html += '</div>'; // card
+                    html += '</div>'; // col
+                    html += '</div>'; // row
+                    
+                } else if (isRestaurantSection) {
+                    // NEW RESTAURANT SECTION - CREATE MODE (no existing data)
+                    html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '">';
+                    html += '<div class="col-md-12">';
+                    html += '<div class="card">';
+                    html += '<div class="card-header bg-light">';
+                    html += '<h5 class="mb-0">' + attrName + '</h5>';
+                    html += '</div>';
+                    html += '<div class="card-body">';
+                    
+                    // Select Type
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Select Type <span class="text-danger">*</span></label>';
+                    html += '<select class="form-control attribute-select-type" id="select_type_' + attrId + '" onchange="toggleMinMaxFields(' + attrId + ')">';
+                    html += '<option value="single">Single (one choice)</option>';
+                    html += '<option value="multiple">Multiple (multiple choices)</option>';
+                    html += '</select>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Min/Max fields (hidden by default)
+                    html += '<div class="row mb-3 min-max-fields" id="min_max_' + attrId + '" style="display:none;">';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Min Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="min_select_' + attrId + '" min="1" value="1">';
+                    html += '</div>';
+                    html += '<div class="col-md-6">';
+                    html += '<label>Max Select <span class="text-danger">*</span></label>';
+                    html += '<input type="number" class="form-control" id="max_select_' + attrId + '" min="1" value="1">';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    // Variant values with prices
+                    html += '<div class="row mb-3">';
+                    html += '<div class="col-md-12">';
+                    html += '<label>Variant Options <span class="text-danger">*</span></label>';
+                    html += '<button type="button" class="btn btn-sm btn-primary float-right" onclick="addVariantOption(' + attrId + ')">Add Option</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    html += '<div id="variant_options_' + attrId + '" class="variant-options-container">';
+                    html += '</div>';
+                    
+                    html += '</div>'; // card-body
+                    html += '</div>'; // card
+                    html += '</div>'; // col
+                    html += '</div>'; // row
+                    
+                } else {
+                    // OLD LOGIC FOR E-COMMERCE
+                    var selected_options = [];
+                    if (item_attribute) {
+                        $.each(item_attribute.attributes, function(index, attribute) {
+                            if ($this.val() == attribute.attribute_id) {
+                                selected_options.push(attribute.attribute_options);
+                            }
+                        });
+                    }
+                    html += '<div class="row" id="attr_' + $this.val() + '">';
+                    html += '<div class="col-md-3">';
+                    html += '<label>' + $this.text() + '</label>';
+                    html += '</div>';
+                    html += '<div class="col-lg-9">';
+                    html += '<input type="text" class="form-control" id="attribute_options_' + $this.val() + '" value="' + selected_options + '" placeholder="Add attribute values" data-role="tagsinput" onchange="variants_update(\'' + btoa(JSON.stringify(item_attribute)) + '\')">';
+                    html += '</div>';
+                    html += '</div>';
                 }
-                html += '<div class="row" id="attr_' + $this.val() + '">';
-                html += '<div class="col-md-3">';
-                html += '<label>' + $this.text() + '</label>';
-                html += '</div>';
-                html += '<div class="col-lg-9">';
-                html += '<input type="text" class="form-control" id="attribute_options_' + $this.val() + '" value="' + selected_options + '" placeholder="Add attribute values" data-role="tagsinput" onchange="variants_update(\'' + btoa(JSON.stringify(item_attribute)) + '\')">';
-                html += '</div>';
-                html += '</div>';
+                attributeIndex++;
             });
+            
             $("#item_attributes").html(html);
-            $("#item_attributes input[data-role=tagsinput]").tagsinput();
+            
+            if (!isRestaurantSection) {
+                $("#item_attributes input[data-role=tagsinput]").tagsinput();
+            }
+            
             if ($("#item_attribute").val().length == 0) {
                 $("#attributes").val('');
                 $("#variants").val('');
                 $("#item_variants").html('');
+            }
+            
+            // Show/hide constraints section for restaurants
+            if (isRestaurantSection && $("#item_attribute").val().length >= 2) {
+                $("#constraints_section").show();
+                // Load existing constraints if any
+                if (item_attribute && item_attribute.constraints) {
+                    loadExistingConstraints(item_attribute.constraints);
+                }
+            } else {
+                $("#constraints_section").hide();
+                $("#constraints_container").html('');
             }
         }
         
@@ -1362,6 +1595,245 @@
             const id = sec.toString(16).replace(/\./g, "").padEnd(14, "0");
             return `${prefix}${id}${random ? `.${Math.trunc(Math.random() * 100000000)}` : ""}`;
         }
+        
+        // ========== RESTAURANT ATTRIBUTES MANAGEMENT ==========
+        var variantOptionCounters = {};
+        
+        function toggleMinMaxFields(attrId) {
+            var selectType = $('#select_type_' + attrId).val();
+            if (selectType === 'multiple') {
+                $('#min_max_' + attrId).show();
+            } else {
+                $('#min_max_' + attrId).hide();
+            }
+        }
+        
+        function addVariantOption(attrId) {
+            if (!variantOptionCounters[attrId]) {
+                variantOptionCounters[attrId] = 0;
+            }
+            var optionIndex = variantOptionCounters[attrId]++;
+            
+            var html = '<div class="row mb-2 variant-option-row" id="variant_option_' + attrId + '_' + optionIndex + '">';
+            html += '<div class="col-md-5">';
+            html += '<input type="text" class="form-control variant-option-name" placeholder="Option name (e.g., Small)" required>';
+            html += '</div>';
+            html += '<div class="col-md-5">';
+            html += '<input type="number" class="form-control variant-option-price" placeholder="Price" step="0.01" min="0" required>';
+            html += '</div>';
+            html += '<div class="col-md-2">';
+            html += '<button type="button" class="btn btn-sm btn-danger" onclick="removeVariantOption(' + attrId + ', ' + optionIndex + ')"><i class="fa fa-trash"></i></button>';
+            html += '</div>';
+            html += '</div>';
+            
+            $('#variant_options_' + attrId).append(html);
+        }
+        
+        function removeVariantOption(attrId, optionIndex) {
+            $('#variant_option_' + attrId + '_' + optionIndex).remove();
+        }
+        
+        function collectRestaurantAttributes() {
+            var attributes = [];
+            
+            $('.attribute-item').each(function() {
+                var attrId = $(this).data('attr-id');
+                var attrIndex = $(this).data('attr-index');
+                
+                var selectType = $('#select_type_' + attrId).val();
+                var minSelect = $('#min_select_' + attrId).val() || 1;
+                var maxSelect = $('#max_select_' + attrId).val() || 1;
+                
+                // Collect variant options
+                var variantOptions = [];
+                $('#variant_options_' + attrId + ' .variant-option-row').each(function() {
+                    var optionName = $(this).find('.variant-option-name').val();
+                    var optionPrice = $(this).find('.variant-option-price').val();
+                    
+                    if (optionName && optionPrice) {
+                        variantOptions.push({
+                            name: optionName,
+                            price: parseFloat(optionPrice)
+                        });
+                    }
+                });
+                
+                if (variantOptions.length > 0) {
+                    attributes.push({
+                        attribute_id: attrId,
+                        select_type: selectType,
+                        min_select: parseInt(minSelect),
+                        max_select: parseInt(maxSelect),
+                        options: variantOptions
+                    });
+                }
+            });
+            
+            return attributes;
+        }
+        
+        // ========== CONSTRAINTS MANAGEMENT ==========
+        var constraintCounter = 0;
+        
+        function addConstraint() {
+            var selectedAttributes = $("#item_attribute").val();
+            if (!selectedAttributes || selectedAttributes.length < 2) {
+                alert('Please select at least 2 attributes to create constraints');
+                return;
+            }
+            
+            var constraintId = constraintCounter++;
+            var html = '<div class="card mb-3 constraint-card" id="constraint_' + constraintId + '">';
+            html += '<div class="card-body">';
+            html += '<button type="button" class="btn btn-sm btn-danger float-right" onclick="removeConstraint(' + constraintId + ')"><i class="fa fa-trash"></i></button>';
+            html += '<h6>Constraint Rule</h6>';
+            
+            // Source Attribute
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-6">';
+            html += '<label>If Attribute <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-source-attr" id="constraint_source_attr_' + constraintId + '" onchange="loadSourceOptions(' + constraintId + ')">';
+            html += '<option value="">Select attribute...</option>';
+            $("#item_attribute option:selected").each(function() {
+                html += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+            
+            html += '<div class="col-md-6">';
+            html += '<label>Equals <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-source-value" id="constraint_source_value_' + constraintId + '" disabled>';
+            html += '<option value="">Select value...</option>';
+            html += '</select>';
+            html += '</div>';
+            html += '</div>';
+            
+            // Target Attribute
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-6">';
+            html += '<label>Then Attribute <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-target-attr" id="constraint_target_attr_' + constraintId + '">';
+            html += '<option value="">Select attribute...</option>';
+            $("#item_attribute option:selected").each(function() {
+                html += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+            
+            html += '<div class="col-md-6">';
+            html += '<label>Set Max Select To <span class="text-danger">*</span></label>';
+            html += '<input type="number" class="form-control constraint-max-value" id="constraint_max_value_' + constraintId + '" min="1" value="1">';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            html += '</div>';
+            
+            $('#constraints_container').append(html);
+        }
+        
+        function loadSourceOptions(constraintId) {
+            var attrId = $('#constraint_source_attr_' + constraintId).val();
+            if (!attrId) {
+                $('#constraint_source_value_' + constraintId).prop('disabled', true);
+                return;
+            }
+            
+            var $valueSelect = $('#constraint_source_value_' + constraintId);
+            $valueSelect.html('<option value="">Select value...</option>');
+            
+            // Load options from the variant options
+            $('#variant_options_' + attrId + ' .variant-option-name').each(function() {
+                var optionName = $(this).val();
+                if (optionName) {
+                    $valueSelect.append('<option value="' + optionName + '">' + optionName + '</option>');
+                }
+            });
+            
+            $valueSelect.prop('disabled', false);
+        }
+        
+        function removeConstraint(constraintId) {
+            $('#constraint_' + constraintId).remove();
+        }
+        
+        function collectAttributeConstraints() {
+            var constraints = [];
+            $('.constraint-card').each(function() {
+                var constraintId = $(this).attr('id').replace('constraint_', '');
+                var sourceAttr = $('#constraint_source_attr_' + constraintId).val();
+                var sourceValue = $('#constraint_source_value_' + constraintId).val();
+                var targetAttr = $('#constraint_target_attr_' + constraintId).val();
+                var maxValue = $('#constraint_max_value_' + constraintId).val();
+                
+                if (sourceAttr && sourceValue && targetAttr && maxValue) {
+                    constraints.push({
+                        source_attribute: sourceAttr,
+                        source_value: sourceValue,
+                        target_attribute: targetAttr,
+                        max_select: parseInt(maxValue)
+                    });
+                }
+            });
+            return constraints;
+        }
+        
+        function loadExistingConstraints(constraints) {
+            constraints.forEach(function(constraint) {
+                var constraintId = constraintCounter++;
+                var html = '<div class="card mb-3 constraint-card" id="constraint_' + constraintId + '">';
+                html += '<div class="card-body">';
+                html += '<button type="button" class="btn btn-sm btn-danger float-right" onclick="removeConstraint(' + constraintId + ')"><i class="fa fa-trash"></i></button>';
+                html += '<h6>Constraint Rule</h6>';
+                
+                // Source Attribute
+                html += '<div class="row mb-3">';
+                html += '<div class="col-md-6">';
+                html += '<label>If Attribute <span class="text-danger">*</span></label>';
+                html += '<select class="form-control constraint-source-attr" id="constraint_source_attr_' + constraintId + '" onchange="loadSourceOptions(' + constraintId + ')">';
+                html += '<option value="">Select attribute...</option>';
+                $("#item_attribute option:selected").each(function() {
+                    var selected = $(this).val() === constraint.source_attribute ? 'selected' : '';
+                    html += '<option value="' + $(this).val() + '" ' + selected + '>' + $(this).text() + '</option>';
+                });
+                html += '</select>';
+                html += '</div>';
+                
+                html += '<div class="col-md-6">';
+                html += '<label>Equals <span class="text-danger">*</span></label>';
+                html += '<select class="form-control constraint-source-value" id="constraint_source_value_' + constraintId + '">';
+                html += '<option value="">Select value...</option>';
+                html += '<option value="' + constraint.source_value + '" selected>' + constraint.source_value + '</option>';
+                html += '</select>';
+                html += '</div>';
+                html += '</div>';
+                
+                // Target Attribute
+                html += '<div class="row mb-3">';
+                html += '<div class="col-md-6">';
+                html += '<label>Then Attribute <span class="text-danger">*</span></label>';
+                html += '<select class="form-control constraint-target-attr" id="constraint_target_attr_' + constraintId + '">';
+                html += '<option value="">Select attribute...</option>';
+                $("#item_attribute option:selected").each(function() {
+                    var selected = $(this).val() === constraint.target_attribute ? 'selected' : '';
+                    html += '<option value="' + $(this).val() + '" ' + selected + '>' + $(this).text() + '</option>';
+                });
+                html += '</select>';
+                html += '</div>';
+                
+                html += '<div class="col-md-6">';
+                html += '<label>Set Max Select To <span class="text-danger">*</span></label>';
+                html += '<input type="number" class="form-control constraint-max-value" id="constraint_max_value_' + constraintId + '" min="1" value="' + constraint.max_select + '">';
+                html += '</div>';
+                html += '</div>';
+                
+                html += '</div>';
+                html += '</div>';
+                
+                $('#constraints_container').append(html);
+            });
+        }
+        // ========== END RESTAURANT ATTRIBUTES ==========
 
     </script>
 @endsection

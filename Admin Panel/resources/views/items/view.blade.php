@@ -88,6 +88,13 @@
                   </div>
               </div>
        
+              <!-- ATTRIBUTES DISPLAY -->
+              <div class="form-group row width-100" id="attributes_display" style="display:none;">
+                  <label class="col-3 control-label">Attributes</label>
+                  <div class="col-9">
+                      <div id="attributes_content"></div>
+                  </div>
+              </div>
 
             </fieldset>
 
@@ -262,6 +269,79 @@ await vendorsDb.get().then( async function(snapshots){
   }
 
   $("#item_description").text(product.description);
+  
+  // DISPLAY RESTAURANT ATTRIBUTES
+  if (product.hasOwnProperty('item_attribute') && product.item_attribute) {
+      var item_attr = product.item_attribute;
+      
+      if (item_attr.type === 'restaurant') {
+          // Display restaurant attributes
+          $('#attributes_display').show();
+          var html = '';
+          
+          if (item_attr.attributes && item_attr.attributes.length > 0) {
+              html += '<div class="card">';
+              html += '<div class="card-body">';
+              
+              item_attr.attributes.forEach(function(attr, index) {
+                  html += '<div class="mb-4">';
+                  html += '<h6 class="font-weight-bold">Attribute ' + (index + 1) + '</h6>';
+                  html += '<table class="table table-bordered table-sm">';
+                  html += '<tr><td width="30%" class="font-weight-bold">Select Type</td><td>' + (attr.select_type === 'single' ? 'Single Choice' : 'Multiple Choices') + '</td></tr>';
+                  
+                  if (attr.select_type === 'multiple') {
+                      html += '<tr><td class="font-weight-bold">Min Select</td><td>' + attr.min_select + '</td></tr>';
+                      html += '<tr><td class="font-weight-bold">Max Select</td><td>' + attr.max_select + '</td></tr>';
+                  }
+                  
+                  html += '<tr><td class="font-weight-bold">Options</td><td>';
+                  if (attr.options && attr.options.length > 0) {
+                      html += '<ul class="list-unstyled mb-0">';
+                      attr.options.forEach(function(option) {
+                          html += '<li>• <strong>' + option.name + '</strong>: ' + option.price + ' {{ $currency }}</li>';
+                      });
+                      html += '</ul>';
+                  }
+                  html += '</td></tr>';
+                  html += '</table>';
+                  html += '</div>';
+              });
+              
+              // Display constraints if any
+              if (item_attr.constraints && item_attr.constraints.length > 0) {
+                  html += '<div class="mb-4">';
+                  html += '<h6 class="font-weight-bold text-info">Constraints</h6>';
+                  html += '<table class="table table-bordered table-sm">';
+                  html += '<thead><tr><th>If Attribute</th><th>Equals</th><th>Then Attribute</th><th>Max Select</th></tr></thead>';
+                  html += '<tbody>';
+                  
+                  item_attr.constraints.forEach(function(constraint) {
+                      html += '<tr>';
+                      html += '<td>Attribute ID: ' + constraint.source_attribute + '</td>';
+                      html += '<td>' + constraint.source_value + '</td>';
+                      html += '<td>Attribute ID: ' + constraint.target_attribute + '</td>';
+                      html += '<td>' + constraint.max_select + '</td>';
+                      html += '</tr>';
+                  });
+                  
+                  html += '</tbody></table>';
+                  html += '</div>';
+              }
+              
+              html += '</div>'; // card-body
+              html += '</div>'; // card
+          }
+          
+          $('#attributes_content').html(html);
+      } else if (item_attr.type === 'ecommerce') {
+          // Display old e-commerce variants (keep existing logic)
+          $('#attributes_display').show();
+          var html = '<div class="card"><div class="card-body">';
+          html += '<p><em>E-commerce attributes (variants)</em></p>';
+          html += '</div></div>';
+          $('#attributes_content').html(html);
+      }
+  }
 
 if(product.hasOwnProperty('photo')){
 
