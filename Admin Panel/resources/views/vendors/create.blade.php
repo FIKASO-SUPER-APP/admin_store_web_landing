@@ -278,7 +278,7 @@ foreach ($countries as $keycountry => $valuecountry) {
         await emailSetting.get().then(async function(snapshots) {
             var emailSettingData=snapshots.data();
 
-            adminEmail=emailSettingData.userName;
+            adminEmail=emailSettingData.adminEmail || emailSettingData.userName;
         });
     });
 
@@ -449,6 +449,26 @@ foreach ($countries as $keycountry => $valuecountry) {
 
         formattedDate = day + '-' + month + '-' + year;
 
+        // ✅ Récupérer TOUS les paramètres email depuis Firebase
+        var emailFromName = '';
+        var emailFromAddress = '';
+        var smtpHost = '';
+        var smtpPort = '';
+        var smtpUsername = '';
+        var smtpPassword = '';
+        var smtpEncryption = '';
+
+        await emailSetting.get().then(async function(snapshots) {
+            var emailSettingData = snapshots.data();
+            emailFromName = emailSettingData.fromName || 'Fikaso Admin';
+            emailFromAddress = emailSettingData.userName || 'noreply@fikaso.com';
+            smtpHost = emailSettingData.host || '';
+            smtpPort = emailSettingData.port || '587';
+            smtpUsername = emailSettingData.userName || '';
+            smtpPassword = emailSettingData.password || '';
+            smtpEncryption = emailSettingData.mailEncryptionType || 'tls';
+        });
+
         var message = emailTemplatesData.message;
         message = message.replace(/{userid}/g, user_id);
         message = message.replace(/{username}/g, name);
@@ -461,7 +481,20 @@ foreach ($countries as $keycountry => $valuecountry) {
 
         var url = "{{url('send-email')}}";
 
-        var sendEmailStatus = await sendEmail(url, emailTemplatesData.subject, emailTemplatesData.message, [adminEmail]);
+        // ✅ Passer TOUS les paramètres SMTP à la fonction sendEmail
+        var sendEmailStatus = await sendEmail(
+            url, 
+            emailTemplatesData.subject, 
+            emailTemplatesData.message, 
+            [adminEmail],
+            emailFromAddress,
+            emailFromName,
+            smtpHost,
+            smtpPort,
+            smtpUsername,
+            smtpPassword,
+            smtpEncryption
+        );
 
         if (sendEmailStatus) {
             flag = true;

@@ -2308,6 +2308,8 @@ return [
     'video_must_be_in_2_1_aspect_ratio' => 'Erreur : La vidéo doit avoir un ratio d\'aspect de 2:1 (par ex. 640x320)',
     'select_product' => 'Sélectionner un produit',
     'already_five_categories_are_active_for_show_in_homepage' => '5 catégories sont déjà actives pour être affichées sur la page d\'accueil..',
+    'admin_email' => 'Email administrateur',
+    'admin_email_help' => 'Email de l\'administrateur qui recevra les notifications (ex: admin@fikaso.com)',
     'unknown_user' => 'Utilisateur inconnu',
 ];
 ?>

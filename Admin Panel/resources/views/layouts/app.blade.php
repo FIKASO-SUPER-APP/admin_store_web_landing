@@ -297,24 +297,40 @@
             }
         });
         
-        async function sendEmail(url, subject, message, recipients) {
+        async function sendEmail(url, subject, message, recipients, fromAddress, fromName, smtpHost, smtpPort, smtpUsername, smtpPassword, smtpEncryption) {
+            console.log('📧 sendEmail appelé avec paramètres SMTP');
+            
             var checkFlag = false;
             await $.ajax({
                 type: 'POST',
                 data: {
                     subject: subject,
                     message: btoa(message),
-                    recipients: recipients
+                    recipients: recipients,
+                    from_address: fromAddress,
+                    from_name: fromName,
+                    smtp_host: smtpHost,
+                    smtp_port: smtpPort,
+                    smtp_username: smtpUsername,
+                    smtp_password: smtpPassword,
+                    smtp_encryption: smtpEncryption
                 },
                 url: url,
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function (data) {
+                    console.log('✅ Email envoyé - Réponse serveur:', data);
                     checkFlag = true;
                 },
                 error: function (xhr, status, error) {
-                    checkFlag = true;
+                    console.error('❌ Erreur envoi email:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText,
+                        statusCode: xhr.status
+                    });
+                    checkFlag = false;
                 }
             });
             return checkFlag;

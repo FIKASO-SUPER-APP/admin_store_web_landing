@@ -15,27 +15,20 @@ class SetEmailData extends Mailable
     public $dynamicSubject;
     public $dynamicMessage;
 
-    /**
-     * Create a new message instance.
-     *
-     * @param string $subject
-     * @param string $message
-     * @return void
-     */
-    public function __construct($subject, $message)
+    public function __construct($subject, $message, $fromAddress = null, $fromName = null)
     {
         $this->dynamicSubject = $subject;
         $this->dynamicMessage = $message;
+        $this->fromAddress = $fromAddress ?? config('mail.from.address');
+        $this->fromName = $fromName ?? config('mail.from.name');
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
     public function build()
     {
-        return $this->subject($this->dynamicSubject)->view('settings.email.send_email')->with('data', $this->dynamicMessage);
+        return $this->subject($this->dynamicSubject)
+                    ->from($this->fromAddress, $this->fromName)
+                    ->view('settings.email.send_email')
+                    ->with('data', $this->dynamicMessage);
     }
 }
 

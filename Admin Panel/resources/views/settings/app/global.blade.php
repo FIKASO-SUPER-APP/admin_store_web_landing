@@ -635,6 +635,16 @@
 
                         </div>
 
+                        <div class="form-group row width-50">
+                            <label class="col-3 control-label">{{ trans('lang.admin_email') }}</label>
+                            <div class="col-7">
+                                <input type="email" class="form-control admin_email">
+                            </div>
+                            <div class="form-text text-muted pl-3">
+                                {{ trans('lang.admin_email_help') }}
+                            </div>
+                        </div>
+
                     </fieldset>
 
                     <fieldset>
@@ -1364,6 +1374,10 @@ if (globalSettings.defaultCountryCode) {
 
                     }
 
+                    if (emailSettingData.adminEmail) {
+                        $('.admin_email').val(emailSettingData.adminEmail);
+                    }
+
 
 
                 } catch (error) {
@@ -1437,6 +1451,8 @@ if (globalSettings.defaultCountryCode) {
                 var auto_approve_vendor = $("#auto_approve_vendor").is(":checked");
 
                 var auto_approve_provider = $("#auto_approve_provider").is(":checked");
+
+                var adminEmail = $('.admin_email').val();
 
                 var restaurant_can_upload_story = $("#restaurant_can_upload_story").is(":checked");
 
@@ -1766,6 +1782,8 @@ if (globalSettings.defaultCountryCode) {
                         'userName': userName,
 
                         'password': password,
+
+                        'adminEmail': adminEmail,
 
                         'mailMethod': "smtp",
 
