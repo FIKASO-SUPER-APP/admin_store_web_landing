@@ -133,6 +133,24 @@
                                 <input type="hidden" id="variants" value="" />
                             </div>
 
+                            <!-- Constraints Section for Restaurant Items -->
+                            <div class="form-group row width-100" id="constraints_section" style="display:none;">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0">Attribute Constraints (Advanced)</h5>
+                                            <small>Define rules between attributes (e.g., if Size=1L then Flavor max=1)</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <button type="button" class="btn btn-sm btn-primary mb-3" onclick="addConstraint()">
+                                                <i class="fa fa-plus"></i> Add Constraint
+                                            </button>
+                                            <div id="constraints_container"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group row width-100">
                                 <label class="col-3 control-label">{{ trans('lang.item_image') }}</label>
                                 <div class="col-7">
@@ -715,6 +733,9 @@
                                 }
                             });
                             
+                            // Collect constraints
+                            var constraints = collectAttributeConstraints();
+                            
                             // No automatic variants for restaurants
                             variants = [];
                             
@@ -779,9 +800,10 @@
                         var item_attribute = null;
                         if (attributes.length > 0) {
                             if (isRestaurantSection) {
-                                // For restaurants: new structure without variants
+                                // For restaurants: new structure with constraints
                                 item_attribute = {
-                                    'attributes': attributes
+                                    'attributes': attributes,
+                                    'constraints': constraints || []
                                 };
                             } else {
                                 // For e-commerce: old structure with variants
@@ -1118,6 +1140,112 @@
             $('#variant_option_' + attrId + '_' + optionIndex).remove();
         }
 
+        // ========== CONSTRAINT MANAGEMENT FUNCTIONS ==========
+        
+        var constraintCounter = 0;
+        
+        function addConstraint() {
+            var selectedAttributes = $("#item_attribute").val();
+            if (!selectedAttributes || selectedAttributes.length < 2) {
+                alert('Please select at least 2 attributes to create constraints');
+                return;
+            }
+            
+            var constraintId = constraintCounter++;
+            var html = '<div class="card mb-3 constraint-card" id="constraint_' + constraintId + '">';
+            html += '<div class="card-body">';
+            html += '<button type="button" class="btn btn-sm btn-danger float-right" onclick="removeConstraint(' + constraintId + ')"><i class="fa fa-trash"></i></button>';
+            html += '<h6>Constraint Rule</h6>';
+            
+            // Source Attribute
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-6">';
+            html += '<label>If Attribute <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-source-attr" id="constraint_source_attr_' + constraintId + '" onchange="loadSourceOptions(' + constraintId + ')">';
+            html += '<option value="">Select attribute...</option>';
+            $("#item_attribute option:selected").each(function() {
+                html += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+            
+            html += '<div class="col-md-6">';
+            html += '<label>Equals <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-source-value" id="constraint_source_value_' + constraintId + '" disabled>';
+            html += '<option value="">Select value...</option>';
+            html += '</select>';
+            html += '</div>';
+            html += '</div>';
+            
+            // Target Attribute
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-6">';
+            html += '<label>Then Attribute <span class="text-danger">*</span></label>';
+            html += '<select class="form-control constraint-target-attr" id="constraint_target_attr_' + constraintId + '">';
+            html += '<option value="">Select attribute...</option>';
+            $("#item_attribute option:selected").each(function() {
+                html += '<option value="' + $(this).val() + '">' + $(this).text() + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+            
+            html += '<div class="col-md-6">';
+            html += '<label>Set Max Select To <span class="text-danger">*</span></label>';
+            html += '<input type="number" class="form-control constraint-max-value" id="constraint_max_value_' + constraintId + '" min="1" value="1">';
+            html += '</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            html += '</div>';
+            
+            $('#constraints_container').append(html);
+        }
+        
+        function loadSourceOptions(constraintId) {
+            var sourceAttrId = $('#constraint_source_attr_' + constraintId).val();
+            var $valueSelect = $('#constraint_source_value_' + constraintId);
+            
+            $valueSelect.html('<option value="">Select value...</option>');
+            
+            if (sourceAttrId) {
+                // Get options from the variant options container
+                $('#variant_options_' + sourceAttrId + ' .variant-option-row').each(function() {
+                    var optionName = $(this).find('.variant-option-name').val();
+                    if (optionName) {
+                        $valueSelect.append('<option value="' + optionName + '">' + optionName + '</option>');
+                    }
+                });
+                $valueSelect.prop('disabled', false);
+            } else {
+                $valueSelect.prop('disabled', true);
+            }
+        }
+        
+        function removeConstraint(constraintId) {
+            $('#constraint_' + constraintId).remove();
+        }
+        
+        function collectAttributeConstraints() {
+            var constraints = [];
+            $('.constraint-card').each(function() {
+                var constraintId = $(this).attr('id').replace('constraint_', '');
+                var sourceAttr = $('#constraint_source_attr_' + constraintId).val();
+                var sourceValue = $('#constraint_source_value_' + constraintId).val();
+                var targetAttr = $('#constraint_target_attr_' + constraintId).val();
+                var maxSelect = $('#constraint_max_value_' + constraintId).val();
+                
+                if (sourceAttr && sourceValue && targetAttr && maxSelect) {
+                    constraints.push({
+                        source_attribute: sourceAttr,
+                        source_value: sourceValue,
+                        target_attribute: targetAttr,
+                        max_select: parseInt(maxSelect)
+                    });
+                }
+            });
+            return constraints;
+        }
+
         function selectAttribute() {
             var html = '';
             var attributeIndex = 0;
@@ -1208,6 +1336,14 @@
                     var attrId = $(this).val();
                     addVariantOption(attrId); // Ajouter automatiquement la première option
                 });
+            }
+            
+            // Show/hide constraints section for restaurants
+            if (isRestaurantSection && $("#item_attribute").val().length >= 2) {
+                $("#constraints_section").show();
+            } else {
+                $("#constraints_section").hide();
+                $("#constraints_container").html('');
             }
         }
 
