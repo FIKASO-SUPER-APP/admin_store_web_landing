@@ -779,7 +779,7 @@
                     window.scrollTo(0, 0);
                 } else {
                     var isRestaurantSection = (section_flag === "delivery-service");
-                    
+
                     //start-item attribute
                     var attributes = [];
                     var variants = [];
@@ -792,13 +792,13 @@
                             var selectType = $('#select_type_' + attrId).val();
                             var minSelect = $('#min_select_' + attrId).val();
                             var maxSelect = $('#max_select_' + attrId).val();
-                            
+
                             // Collect variant options with prices
                             var variantOptions = [];
                             $('#variant_options_' + attrId + ' .variant-option-row').each(function() {
                                 var optionName = $(this).find('.variant-option-name').val();
                                 var optionPrice = $(this).find('.variant-option-price').val();
-                                
+
                                 if (optionName && optionPrice) {
                                     variantOptions.push({
                                         name: optionName.trim(),
@@ -806,7 +806,7 @@
                                     });
                                 }
                             });
-                            
+
                             if (variantOptions.length > 0) { // Only push if there are options
                                 attributes.push({
                                     attribute_id: attrId,
@@ -814,17 +814,17 @@
                                     select_type: selectType,
                                     min_select: (selectType === 'multiple' && minSelect) ? parseInt(minSelect) : null,
                                     max_select: (selectType === 'multiple' && maxSelect) ? parseInt(maxSelect) : null,
-                                    attribute_options: variantOptions
+                                    options: variantOptions  // Changed from attribute_options to options
                                 });
                             }
                         });
-                        
+
                         // Collect constraints
                         var constraints = collectAttributeConstraints();
-                        
+
                         // No automatic variants for restaurants
                         variants = [];
-                        
+
                     } else {
                         // OLD E-COMMERCE LOGIC
                         if ($('#attributes').val().length > 0) {
@@ -882,6 +882,7 @@
                     } else if (isRestaurantSection && attributes.length > 0) {
                         // For restaurants, create item_attribute with constraints
                         var item_attribute = {
+                            'type': 'restaurant',
                             'attributes': attributes,
                             'variants': [], // Empty array for restaurants
                             'constraints': constraints || [] // Include constraints
@@ -1262,30 +1263,30 @@
 
         function selectAttribute(item_attribute = '') {
             var isRestaurantSection = (section_flag === "delivery-service");
-            
+
             if (item_attribute) {
                 var item_attribute = $.parseJSON(atob(item_attribute));
             }
 
             var html = '';
             var attributeIndex = 0;
-            
+
             if (isRestaurantSection) {
                 // NEW RESTAURANT LOGIC - Card-based layout with prices and constraints
                 $("#item_attribute").find('option:selected').each(function() {
                     var attrId = $(this).val();
                     var attrName = $(this).text();
-                    
+
                     // Find existing data for this attribute
                     var existingAttr = null;
-                    if (item_attribute && item_attribute.attributes) {
+                    if (item_attribute && item_attribute.type === 'restaurant' && item_attribute.attributes) {
                         existingAttr = item_attribute.attributes.find(attr => attr.attribute_id == attrId);
                     }
-                    
+
                     var selectType = existingAttr ? existingAttr.select_type : 'single';
                     var minSelect = existingAttr && existingAttr.min_select ? existingAttr.min_select : 1;
                     var maxSelect = existingAttr && existingAttr.max_select ? existingAttr.max_select : 1;
-                    
+
                     html += '<div class="row attribute-item mb-3" data-attr-id="' + attrId + '" data-attr-index="' + attributeIndex + '" data-attr-name="' + attrName + '">';
                     html += '<div class="col-md-12">';
                     html += '<div class="card">';
@@ -1293,7 +1294,7 @@
                     html += '<h5 class="mb-0">' + attrName + '</h5>';
                     html += '</div>';
                     html += '<div class="card-body">';
-                    
+
                     // Select Type
                     html += '<div class="row mb-3">';
                     html += '<div class="col-md-6">';
@@ -1304,7 +1305,7 @@
                     html += '</select>';
                     html += '</div>';
                     html += '</div>';
-                    
+
                     // Min/Max Select Fields
                     var displayMinMax = (selectType === 'multiple') ? 'block' : 'none';
                     html += '<div class="row mb-3 min-max-fields" id="min_max_' + attrId + '" style="display:' + displayMinMax + ';">';
@@ -1317,7 +1318,7 @@
                     html += '<input type="number" class="form-control" id="max_select_' + attrId + '" min="1" value="' + maxSelect + '">';
                     html += '</div>';
                     html += '</div>';
-                    
+
                     // Variant Options Header
                     html += '<div class="row mb-3">';
                     html += '<div class="col-md-12">';
@@ -1325,13 +1326,13 @@
                     html += '<button type="button" class="btn btn-sm btn-primary float-right" onclick="addVariantOption(\'' + attrId + '\')">Add Option</button>';
                     html += '</div>';
                     html += '</div>';
-                    
+
                     // Variant Options Container
                     html += '<div id="variant_options_' + attrId + '" class="variant-options-container">';
-                    
+
                     // Load existing options
-                    if (existingAttr && existingAttr.attribute_options) {
-                        existingAttr.attribute_options.forEach((option, idx) => {
+                    if (existingAttr && existingAttr.options) {
+                        existingAttr.options.forEach((option, idx) => {
                             html += '<div class="row mb-2 variant-option-row" data-option-index="' + idx + '">';
                             html += '<div class="col-md-5">';
                             html += '<input type="text" class="form-control variant-option-name" placeholder="Option name" value="' + option.name + '">';
@@ -1345,13 +1346,13 @@
                             html += '</div>';
                         });
                     }
-                    
+
                     html += '</div>'; // End variant-options-container
                     html += '</div>'; // End card-body
                     html += '</div>'; // End card
                     html += '</div>'; // End col-md-12
                     html += '</div>'; // End row attribute-item
-                    
+
                     attributeIndex++;
                 });
             } else {
@@ -1376,9 +1377,9 @@
                     html += '</div>';
                 });
             }
-            
+
             $("#item_attributes").html(html);
-            
+
             if (!isRestaurantSection) {
                 $("#item_attributes input[data-role=tagsinput]").tagsinput();
             }
@@ -1388,7 +1389,7 @@
                 $("#variants").val('');
                 $("#item_variants").html('');
             }
-            
+
             // Show/hide constraints section for restaurants
             if (isRestaurantSection && $("#item_attribute").val().length >= 2) {
                 $("#constraints_section").show();
@@ -1404,7 +1405,7 @@
 
         function variants_update(item_attributeX = '') {
             var isRestaurantSection = (section_flag === "delivery-service");
-            
+
             if (isRestaurantSection) {
                 // NO AUTOMATIC VARIANT GENERATION FOR RESTAURANTS
                 $("#item_variants").html('');
@@ -1509,7 +1510,7 @@
         }
 
         // ========== NEW FUNCTIONS FOR RESTAURANT ATTRIBUTES ==========
-        
+
         function toggleMinMaxFields(attrId) {
             var selectType = $('#select_type_' + attrId).val();
             if (selectType === 'multiple') {
@@ -1526,7 +1527,7 @@
                 optionCounters[attrId] = 0;
             }
             var optionIndex = optionCounters[attrId]++;
-            
+
             var html = '<div class="row mb-2 variant-option-row" data-option-index="' + optionIndex + '">';
             html += '<div class="col-md-5">';
             html += '<input type="text" class="form-control variant-option-name" placeholder="Option name">';
@@ -1538,7 +1539,7 @@
             html += '<button type="button" class="btn btn-sm btn-danger" onclick="removeVariantOption(\'' + attrId + '\', ' + optionIndex + ')"><i class="fa fa-trash"></i></button>';
             html += '</div>';
             html += '</div>';
-            
+
             $('#variant_options_' + attrId).append(html);
         }
 
@@ -1547,22 +1548,22 @@
         }
 
         // ========== CONSTRAINT MANAGEMENT FUNCTIONS ==========
-        
+
         var constraintCounter = 0;
-        
+
         function addConstraint() {
             var selectedAttributes = $("#item_attribute").val();
             if (!selectedAttributes || selectedAttributes.length < 2) {
                 alert('Please select at least 2 attributes to create constraints');
                 return;
             }
-            
+
             var constraintId = constraintCounter++;
             var html = '<div class="card mb-3 constraint-card" id="constraint_' + constraintId + '">';
             html += '<div class="card-body">';
             html += '<button type="button" class="btn btn-sm btn-danger float-right" onclick="removeConstraint(' + constraintId + ')"><i class="fa fa-trash"></i></button>';
             html += '<h6>Constraint Rule</h6>';
-            
+
             // Source Attribute
             html += '<div class="row mb-3">';
             html += '<div class="col-md-6">';
@@ -1574,7 +1575,7 @@
             });
             html += '</select>';
             html += '</div>';
-            
+
             html += '<div class="col-md-6">';
             html += '<label>Equals <span class="text-danger">*</span></label>';
             html += '<select class="form-control constraint-source-value" id="constraint_source_value_' + constraintId + '" disabled>';
@@ -1582,7 +1583,7 @@
             html += '</select>';
             html += '</div>';
             html += '</div>';
-            
+
             // Target Attribute
             html += '<div class="row mb-3">';
             html += '<div class="col-md-6">';
@@ -1594,25 +1595,25 @@
             });
             html += '</select>';
             html += '</div>';
-            
+
             html += '<div class="col-md-6">';
             html += '<label>Set Max Select To <span class="text-danger">*</span></label>';
             html += '<input type="number" class="form-control constraint-max-value" id="constraint_max_value_' + constraintId + '" min="1" value="1">';
             html += '</div>';
             html += '</div>';
-            
+
             html += '</div>';
             html += '</div>';
-            
+
             $('#constraints_container').append(html);
         }
-        
+
         function loadSourceOptions(constraintId) {
             var sourceAttrId = $('#constraint_source_attr_' + constraintId).val();
             var $valueSelect = $('#constraint_source_value_' + constraintId);
-            
+
             $valueSelect.html('<option value="">Select value...</option>');
-            
+
             if (sourceAttrId) {
                 // Get options from the variant options container
                 $('#variant_options_' + sourceAttrId + ' .variant-option-row').each(function() {
@@ -1626,11 +1627,11 @@
                 $valueSelect.prop('disabled', true);
             }
         }
-        
+
         function removeConstraint(constraintId) {
             $('#constraint_' + constraintId).remove();
         }
-        
+
         function collectAttributeConstraints() {
             var constraints = [];
             $('.constraint-card').each(function() {
@@ -1639,7 +1640,7 @@
                 var sourceValue = $('#constraint_source_value_' + constraintId).val();
                 var targetAttr = $('#constraint_target_attr_' + constraintId).val();
                 var maxSelect = $('#constraint_max_value_' + constraintId).val();
-                
+
                 if (sourceAttr && sourceValue && targetAttr && maxSelect) {
                     constraints.push({
                         source_attribute: sourceAttr,
@@ -1651,7 +1652,7 @@
             });
             return constraints;
         }
-        
+
         function loadExistingConstraints(constraints) {
             constraints.forEach(function(constraint) {
                 var constraintId = constraintCounter++;
@@ -1659,7 +1660,7 @@
                 html += '<div class="card-body">';
                 html += '<button type="button" class="btn btn-sm btn-danger float-right" onclick="removeConstraint(' + constraintId + ')"><i class="fa fa-trash"></i></button>';
                 html += '<h6>Constraint Rule</h6>';
-                
+
                 // Source Attribute
                 html += '<div class="row mb-3">';
                 html += '<div class="col-md-6">';
@@ -1672,7 +1673,7 @@
                 });
                 html += '</select>';
                 html += '</div>';
-                
+
                 html += '<div class="col-md-6">';
                 html += '<label>Equals <span class="text-danger">*</span></label>';
                 html += '<select class="form-control constraint-source-value" id="constraint_source_value_' + constraintId + '">';
@@ -1681,7 +1682,7 @@
                 html += '</select>';
                 html += '</div>';
                 html += '</div>';
-                
+
                 // Target Attribute
                 html += '<div class="row mb-3">';
                 html += '<div class="col-md-6">';
@@ -1694,16 +1695,16 @@
                 });
                 html += '</select>';
                 html += '</div>';
-                
+
                 html += '<div class="col-md-6">';
                 html += '<label>Set Max Select To <span class="text-danger">*</span></label>';
                 html += '<input type="number" class="form-control constraint-max-value" id="constraint_max_value_' + constraintId + '" min="1" value="' + constraint.max_select + '">';
                 html += '</div>';
                 html += '</div>';
-                
+
                 html += '</div>';
                 html += '</div>';
-                
+
                 $('#constraints_container').append(html);
             });
         }
