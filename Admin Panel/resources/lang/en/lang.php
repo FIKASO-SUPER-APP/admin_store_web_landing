@@ -2326,6 +2326,7 @@ return [
     'enable_system_dispatch' => "Enable automatic dispatch",
     'system_dispatch_note' => "Note:",
     'system_dispatch_help' => "If enabled, the system will automatically assign orders to delivery drivers. If disabled, assignment will be done manually.",
+    'deliveryman_assigned_successfully' => "Delivery driver assigned successfully",
     'unknown_user' => 'Unknown User',
 ];
 ?>

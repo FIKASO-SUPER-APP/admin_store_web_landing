@@ -142,6 +142,19 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="form-group row width-100 non-printable" id="manual_dispatch_section" style="display: none;">
+                                                        <label class="col-3 control-label">{{ trans('lang.assign_delivery_man') }}:</label>
+                                                        <div class="col-7">
+                                                            <select name="manual_deliveryman" class="form-control" id="manual_deliveryman_list">
+                                                                <option value="">{{ trans('lang.select_deliveryman') }}</option>
+                                                            </select>
+                                                            <div id="manual_select_deliveryman_error" style="color:red"></div>
+                                                            <button type="button" class="btn btn-success mt-2" id="manual_assign_deliveryman_btn">
+                                                                <i class="fa fa-check"></i> {{ trans('lang.assign') }}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
                                                     <div class="form-group row width-100 non-printable">
                                                         <label class="col-3 control-label"></label>
                                                         <div class="col-7 text-right">
@@ -687,11 +700,21 @@
         var isSelfDeliveryGlobally = false;
         var isSelfDeliveryByVendor = false;
         var singleOrderReceive = false;
+        var systemDispatchEnabled = false;
         var refDriverNearBy = database.collection('settings').doc("DriverNearBy");
+        var refSystemDispatch = database.collection('settings').doc("SystemDispatch");
         refDriverNearBy.get().then(async function(snapshot) {
             var data = snapshot.data();
             if (data.singleOrderReceive) {
                 singleOrderReceive = true;
+            }
+        })
+        
+        // Récupérer le paramètre SystemDispatch
+        refSystemDispatch.get().then(async function(snapshot) {
+            var systemDispatchData = snapshot.data();
+            if (systemDispatchData && systemDispatchData.enabled) {
+                systemDispatchEnabled = true;
             }
         })
         var scheduleOrderAcceptData = {};
@@ -824,6 +847,16 @@
                             .adminCommision != '') {
                             if (snapshot.data().adminCommision.enable) {
                                 commissionModel = true;
+                            }
+                        }
+                        
+                        // Afficher la section d'assignation manuelle si SystemDispatch est désactivé et que c'est un restaurant
+                        // Afficher uniquement si la commande n'est pas encore complétée ou annulée
+                        if (!systemDispatchEnabled && service_type == "delivery-service" && !order.takeAway) {
+                            if (order.status != 'Order Completed' && order.status != 'Order Cancelled' && order.status != 'Order Rejected') {
+                                $('#manual_dispatch_section').show();
+                                // Charger tous les deliverymen pour l'assignation manuelle
+                                await getManualDeliverymanList(order.vendorID);
                             }
                         }
                     });
@@ -1057,6 +1090,12 @@
 
                 if (order.driverID != '' && order.driverID != undefined) {
                     driverId = order.driverID;
+                    // Préremplir le select si un driver est déjà assigné et que SystemDispatch est désactivé
+                    if (!systemDispatchEnabled && service_type == "delivery-service" && !order.takeAway) {
+                        setTimeout(function() {
+                            $('#manual_deliveryman_list').val(driverId).trigger('change');
+                        }, 500);
+                    }
                 }
                 if (order.vendor && order.vendor.author != '' && order.vendor.author != undefined) {
                     vendorAuthor = order.vendor.author;
@@ -1288,6 +1327,116 @@
 
 
             }
+            
+            // Fonction pour charger la liste des deliverymen pour l'assignation manuelle (tous les deliverymen)
+            async function getManualDeliverymanList(vendorID) {
+                $('#manual_deliveryman_list').empty();
+                $('#manual_deliveryman_list').append('<option value="">{{ trans("lang.select_deliveryman") }}</option>');
+                
+                // Charger tous les deliverymen (pas seulement ceux du vendor)
+                var query = database.collection('users').where('role', '==', 'driver').where('isActive', '==', true);
+                
+                // Filtrer par serviceType si c'est un restaurant (delivery-service)
+                if (service_type == "delivery-service") {
+                    query = query.where('serviceType', '==', 'delivery-service');
+                }
+                
+                query.get().then(async function(snapshot) {
+                    if (snapshot.docs.length > 0) {
+                        snapshot.docs.forEach((listval) => {
+                            var data = listval.data();
+                            
+                            if (singleOrderReceive) {
+                                let option = $("<option></option>")
+                                    .attr("value", data.id)
+                                    .attr("fcm", data.fcmToken);
+
+                                if (data.hasOwnProperty('inProgressOrderID') &&
+                                    data.inProgressOrderID !== null &&
+                                    data.inProgressOrderID !== '' &&
+                                    data.inProgressOrderID.length > 0) {
+                                    option.prop("disabled", true)
+                                        .text(data.firstName + ' ' + data.lastName + ' (Occupied)');
+                                } else {
+                                    option.text(data.firstName + ' ' + data.lastName);
+                                }
+                                $('#manual_deliveryman_list').append(option);
+                            } else {
+                                $('#manual_deliveryman_list').append($("<option></option>")
+                                    .attr("value", data.id)
+                                    .attr("fcm", data.fcmToken)
+                                    .text(data.firstName + ' ' + data.lastName));
+                            }
+                        });
+                        $('#manual_deliveryman_list').select2();
+                    }
+                });
+            }
+            
+            // Assigner manuellement un deliveryman
+            $('#manual_assign_deliveryman_btn').click(async function() {
+                var deliverymanId = $('#manual_deliveryman_list').val();
+                if (deliverymanId == '' || deliverymanId == null) {
+                    $('#manual_select_deliveryman_error').html('{{ trans("lang.select_deliveryman") }}');
+                    return false;
+                }
+                $('#manual_select_deliveryman_error').html('');
+                
+                // Récupérer les données du deliveryman
+                var driverData = '';
+                var fcmTokenDriver = '';
+                await database.collection('users').where('id', '==', deliverymanId).get().then(async function(snapshot) {
+                    if (snapshot.docs.length > 0) {
+                        driverData = snapshot.docs[0].data();
+                        fcmTokenDriver = driverData.fcmToken;
+                        
+                        // Mettre à jour les orderRequestData et inProgressOrderID du driver
+                        var orderRequestData = [];
+                        var inProgressOrderID = [];
+                        
+                        if (driverData.hasOwnProperty('orderRequestData') && driverData.orderRequestData != null && driverData.orderRequestData != '') {
+                            orderRequestData = driverData.orderRequestData;
+                        }
+                        if (driverData.hasOwnProperty('inProgressOrderID') && driverData.inProgressOrderID != null && driverData.inProgressOrderID != '') {
+                            inProgressOrderID = driverData.inProgressOrderID;
+                        }
+                        
+                        orderRequestData.push(id);
+                        inProgressOrderID.push(id);
+                        
+                        await database.collection('users').doc(deliverymanId).update({
+                            'orderRequestData': orderRequestData,
+                            'inProgressOrderID': inProgressOrderID
+                        });
+                    }
+                });
+                
+                // Mettre à jour la commande avec le deliveryman assigné
+                await database.collection('vendor_orders').doc(id).update({
+                    'driverID': deliverymanId,
+                    'driver': driverData,
+                    'status': 'Order Shipped'
+                }).then(async function(result) {
+                    // Envoyer une notification au deliveryman
+                    if (fcmTokenDriver) {
+                        await $.ajax({
+                            type: 'POST',
+                            url: "<?php echo route('order-status-notification'); ?>",
+                            data: {
+                                _token: '<?php echo csrf_token(); ?>',
+                                'fcm': fcmTokenDriver,
+                                'vendorname': vendorname,
+                                'orderStatus': 'Order Shipped',
+                                'subject': selfDeliveryOrderAssignSubject || '{{ trans("lang.assign_order_notification") }}',
+                                'message': selfDeliveryOrderAssignMsg || '{{ trans("lang.assign_order_notification") }}'
+                            }
+                        });
+                    }
+                    
+                    alert('{{ trans("lang.deliveryman_assigned_successfully") }}');
+                    window.location.reload();
+                });
+            });
             $('#deliveryman_list').on('select2:open', function() {
 
                 setTimeout(function() {

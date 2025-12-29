@@ -197,6 +197,7 @@ return [
     'enable_system_dispatch' => "Activer le dispatch automatique",
     'system_dispatch_note' => "Note :",
     'system_dispatch_help' => "Si activé, le système assignera automatiquement les commandes aux livreurs. Si désactivé, l'assignation se fera manuellement.",
+    'deliveryman_assigned_successfully' => "Livreur assigné avec succès",
     'add_secteur_pair' => "Ajouter un couple de secteurs",
     'secteur_from' => "Secteur de départ",
     'secteur_to' => "Secteur de destination",
