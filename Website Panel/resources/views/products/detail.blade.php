@@ -252,6 +252,33 @@
                 Swal.fire({text: "{{trans('lang.invalid_qty')}}", icon: "error"});
                 return false;
             }
+            
+            var serviceType = getCookie('service_type');
+            var isRestaurantSection = (serviceType === 'Multivendor Delivery Service');
+            var restaurantAttributes = {};
+            var restaurantAttributePrice = 0;
+            
+            // Récupérer les attributs sélectionnés pour les restaurants
+            if (isRestaurantSection && $('#attribute-list-' + id).length > 0) {
+                var productData = JSON.parse(atob($('#attribute-list-' + id).data('product')));
+                if (productData.item_attribute && productData.item_attribute.type === 'restaurant') {
+                    $('#attribute-list-' + id + ' .attribute-item').each(function() {
+                        var attributeId = $(this).data('attribute-id');
+                        var selectedOptions = [];
+                        $(this).find('.attribute-option-input:checked').each(function() {
+                            selectedOptions.push({
+                                name: $(this).data('option-name'),
+                                price: parseFloat($(this).data('option-price'))
+                            });
+                            restaurantAttributePrice += parseFloat($(this).data('option-price'));
+                        });
+                        if (selectedOptions.length > 0) {
+                            restaurantAttributes[attributeId] = selectedOptions;
+                        }
+                    });
+                }
+            }
+            
             var extra = [];
             var size = $('input[name="size_' + id + '"]:checked').val();
             if (size) {
@@ -291,6 +318,12 @@
                     Swal.fire({text: "{{trans('lang.invalid_stock_qty')}}", icon: "error"});
                     return false;
                 }
+            }
+            
+            // Ajouter le prix des attributs restaurants au prix de base
+            if (isRestaurantSection && restaurantAttributePrice > 0) {
+                price = price + restaurantAttributePrice;
+                item_price = price;
             }
             var category_id = $('input[name="category_id_' + id + '"]').val();
             var vendor_id = $('input[name="vendor_id"]').val();
@@ -350,6 +383,8 @@
                     vendor_latitude: vendor_latitude,
                     vendor_longitude: vendor_longitude,
                     variant_info: variant_info,
+                    restaurant_attributes: (isRestaurantSection && Object.keys(restaurantAttributes).length > 0) ? JSON.stringify(restaurantAttributes) : null,
+                    restaurant_attribute_price: restaurantAttributePrice,
                     category_id: category_id,
                     specialOfferForHour: specialOfferForHour,
                     decimal_degits: decimal_degits,
@@ -1055,7 +1090,21 @@
                 html = html + '</div>';
             html = html + '</div>';
             html = html + '<div class="car-det-price ml-auto">';
-            if (vendorProduct.item_attribute != null && vendorProduct.item_attribute != "" && vendorProduct.item_attribute.attributes.length > 0 && vendorProduct.item_attribute.variants.length > 0) {
+            var serviceType = getCookie('service_type');
+            var isRestaurantSection = (serviceType === 'Multivendor Delivery Service');
+            
+            // Pour les restaurants avec attributs
+            if (isRestaurantSection && vendorProduct.item_attribute && vendorProduct.item_attribute.type === 'restaurant' && vendorProduct.item_attribute.attributes && vendorProduct.item_attribute.attributes.length > 0) {
+                var basePrice = parseFloat(final_price.price || 0);
+                var formattedBasePrice = getProductFormattedPrice(basePrice);
+                if (vendorProduct.hasOwnProperty('disPrice') && vendorProduct.disPrice != '' && vendorProduct.disPrice != '0') {
+                    var disPrice = parseFloat(final_price.dis_price || 0);
+                    var formattedDisPrice = getProductFormattedPrice(disPrice);
+                    html = html + '<span class="price" id="restaurant-attribute-price-' + vendorProduct.id + '"><s>' + formattedBasePrice + '</s> ' + formattedDisPrice + '</span>';
+                } else {
+                    html = html + '<span class="price" id="restaurant-attribute-price-' + vendorProduct.id + '">' + formattedBasePrice + '</span>';
+                }
+            } else if (vendorProduct.item_attribute != null && vendorProduct.item_attribute != "" && vendorProduct.item_attribute.attributes.length > 0 && vendorProduct.item_attribute.variants.length > 0) {
                 html = html + '<span class="price">';
                 html = html + '<div class="variation_info" id="variation_info_' + vendorProduct.id + '">';
                 html = html + '<span id="variant_price"></span>';
@@ -1135,16 +1184,34 @@
                     .fats + '</span></h3>';
                 html = html + '</div></div>';
             }
-            if (vendorProduct.item_attribute != null && vendorProduct.item_attribute != "" && vendorProduct.item_attribute.attributes.length > 0 && vendorProduct.item_attribute.variants.length > 0) {
-                var attributes = vendorProduct.item_attribute.attributes;
-                var variants = vendorProduct.item_attribute.variants;
-                vendorProduct.product_specification = encodeURIComponent(vendorProduct.product_specification);
-                html = html + '<div class="attributes mt-2 mb-0">';
-                html = html + '<div class="v-boxariants">';
-                html = html + '<div class="attribute_list" id="attribute-list-' + vendorProduct.id + '" data-pid="' + vendorProduct.id + '" data-product="' + btoa(JSON.stringify(vendorProduct)) + '"></div>';
-                html = html + '</div>';
-                html = html + '</div>';
-                getVariantsHtml(vendorProduct, attributes, variants)
+            // Gérer les attributs pour restaurants (type: 'restaurant') ou ecommerce (avec variants)
+            if (vendorProduct.item_attribute != null && vendorProduct.item_attribute != "") {
+                var serviceType = getCookie('service_type');
+                var isRestaurantSection = (serviceType === 'Multivendor Delivery Service');
+                
+                // Pour les restaurants, la structure est différente
+                if (isRestaurantSection && vendorProduct.item_attribute.type === 'restaurant' && vendorProduct.item_attribute.attributes && vendorProduct.item_attribute.attributes.length > 0) {
+                    var attributes = vendorProduct.item_attribute.attributes;
+                    var constraints = vendorProduct.item_attribute.constraints || [];
+                    vendorProduct.product_specification = encodeURIComponent(vendorProduct.product_specification);
+                    html = html + '<div class="attributes mt-2 mb-0">';
+                    html = html + '<div class="v-boxariants">';
+                    html = html + '<div class="attribute_list" id="attribute-list-' + vendorProduct.id + '" data-pid="' + vendorProduct.id + '" data-product="' + btoa(JSON.stringify(vendorProduct)) + '" data-constraints="' + btoa(JSON.stringify(constraints)) + '"></div>';
+                    html = html + '</div>';
+                    html = html + '</div>';
+                    getRestaurantAttributesHtml(vendorProduct, attributes, constraints);
+                } else if (vendorProduct.item_attribute.attributes && vendorProduct.item_attribute.attributes.length > 0 && vendorProduct.item_attribute.variants && vendorProduct.item_attribute.variants.length > 0) {
+                    // Pour ecommerce (ancienne logique)
+                    var attributes = vendorProduct.item_attribute.attributes;
+                    var variants = vendorProduct.item_attribute.variants;
+                    vendorProduct.product_specification = encodeURIComponent(vendorProduct.product_specification);
+                    html = html + '<div class="attributes mt-2 mb-0">';
+                    html = html + '<div class="v-boxariants">';
+                    html = html + '<div class="attribute_list" id="attribute-list-' + vendorProduct.id + '" data-pid="' + vendorProduct.id + '" data-product="' + btoa(JSON.stringify(vendorProduct)) + '"></div>';
+                    html = html + '</div>';
+                    html = html + '</div>';
+                    getVariantsHtml(vendorProduct, attributes, variants);
+                }
             }           
           
             if (vendorProduct.hasOwnProperty('addOnsPrice') && vendorProduct.addOnsPrice.length > 0) {
@@ -1389,23 +1456,257 @@
         }
     }
 
+    // Fonction pour gérer les attributs restaurants avec contraintes
+    async function getRestaurantAttributesHtml(vendorProduct, attributes, constraints) {
+        var attributesHtml = '';
+        var serviceType = getCookie('service_type');
+        var attributesCollection = 'item_attributes';
+        
+        for (var i = 0; i < attributes.length; i++) {
+            var attribute = attributes[i];
+            var attributeId = attribute.attribute_id;
+            var selectType = attribute.select_type || 'single';
+            var minSelect = attribute.min_select || 1;
+            var maxSelect = attribute.max_select || 1;
+            var options = attribute.options || [];
+            
+            // Récupérer le nom de l'attribut depuis Firebase
+            var attributesRef = database.collection(attributesCollection).where('id', "==", attributeId);
+            var attributeRef = await attributesRef.get();
+            
+            // Fallback vers vendor_attributes si nécessaire
+            if (attributeRef.docs.length === 0) {
+                var vendorAttributesRef = database.collection('vendor_attributes').where('id', "==", attributeId);
+                attributeRef = await vendorAttributesRef.get();
+            }
+            
+            if (attributeRef.docs.length > 0) {
+                var attributeInfo = attributeRef.docs[0].data();
+                var attributeName = attributeInfo.title || attribute.attribute_name || 'Attribute';
+                
+                attributesHtml += '<div class="attribute-item mb-4" data-attribute-id="' + attributeId + '" data-select-type="' + selectType + '" data-min-select="' + minSelect + '" data-max-select="' + maxSelect + '">';
+                attributesHtml += '<h4 class="attribute-label mb-3">' + attributeName;
+                if (selectType === 'multiple') {
+                    attributesHtml += ' <small class="text-muted">(Select ' + minSelect + '-' + maxSelect + ')</small>';
+                }
+                attributesHtml += '</h4>';
+                attributesHtml += '<div class="attribute-options">';
+                
+                // Afficher les options avec prix
+                for (var j = 0; j < options.length; j++) {
+                    var option = options[j];
+                    var optionName = option.name || option;
+                    var optionPrice = parseFloat(option.price || 0);
+                    
+                    // Appliquer la commission admin si nécessaire
+                    if (sectionData && sectionData.adminCommision && sectionData.adminCommision.enable === true) {
+                        let commission = parseFloat(sectionData.adminCommision.commission) || 0;
+                        if (sectionData.adminCommision.type === "fixed") {
+                            optionPrice = optionPrice + commission;
+                        } else if (sectionData.adminCommision.type === "percentage") {
+                            optionPrice = optionPrice + (optionPrice * commission / 100);
+                        }
+                        optionPrice = parseFloat(optionPrice.toFixed(2));
+                    }
+                    
+                    var formattedPrice = '';
+                    if (currencyAtRight) {
+                        formattedPrice = optionPrice.toFixed(decimal_degits) + currentCurrency;
+                    } else {
+                        formattedPrice = currentCurrency + optionPrice.toFixed(decimal_degits);
+                    }
+                    
+                    var inputType = (selectType === 'multiple') ? 'checkbox' : 'radio';
+                    var inputName = 'attribute-' + attributeId;
+                    var inputId = 'attribute-' + attributeId + '-' + j;
+                    var isChecked = (j === 0 && selectType === 'single') ? 'checked' : '';
+                    
+                    attributesHtml += '<div class="custom-control custom-' + inputType + ' border-bottom py-2 attribute-option" data-option-price="' + optionPrice + '">';
+                    attributesHtml += '<input type="' + inputType + '" id="' + inputId + '" name="' + inputName + '" value="' + optionName + '" ' + isChecked + ' class="custom-control-input attribute-option-input" data-attribute-id="' + attributeId + '" data-option-name="' + optionName + '" data-option-price="' + optionPrice + '">';
+                    attributesHtml += '<label class="custom-control-label d-flex justify-content-between w-100" for="' + inputId + '">';
+                    attributesHtml += '<span>' + optionName + '</span>';
+                    if (optionPrice > 0) {
+                        attributesHtml += '<span class="text-primary font-weight-bold">+' + formattedPrice + '</span>';
+                    }
+                    attributesHtml += '</label>';
+                    attributesHtml += '</div>';
+                }
+                
+                attributesHtml += '<div class="attribute-selection-info text-muted mt-2" id="attribute-info-' + attributeId + '"></div>';
+                attributesHtml += '</div>';
+                attributesHtml += '</div>';
+            }
+        }
+        
+        $('#attribute-list-' + vendorProduct.id).html(attributesHtml);
+        
+        // Initialiser les événements et la validation
+        initializeRestaurantAttributeEvents(vendorProduct, constraints);
+        updateRestaurantAttributePrice(vendorProduct);
+    }
+    
+    // Initialiser les événements pour les attributs restaurants
+    function initializeRestaurantAttributeEvents(vendorProduct, constraints) {
+        var productId = vendorProduct.id;
+        
+        // Événement sur changement de sélection
+        $(document).off('change', '.attribute-option-input').on('change', '.attribute-option-input', function() {
+            var attributeId = $(this).data('attribute-id');
+            var attributeItem = $(this).closest('.attribute-item');
+            var selectType = attributeItem.data('select-type');
+            var minSelect = parseInt(attributeItem.data('min-select'));
+            var maxSelect = parseInt(attributeItem.data('max-select'));
+            
+            if (selectType === 'multiple') {
+                var selectedCount = attributeItem.find('.attribute-option-input:checked').length;
+                
+                // Validation min/max
+                if (selectedCount < minSelect) {
+                    Swal.fire({
+                        text: "Please select at least " + minSelect + " option(s)",
+                        icon: "warning"
+                    });
+                    $(this).prop('checked', true);
+                    return;
+                }
+                
+                if (selectedCount > maxSelect) {
+                    Swal.fire({
+                        text: "You can select maximum " + maxSelect + " option(s)",
+                        icon: "warning"
+                    });
+                    $(this).prop('checked', false);
+                    return;
+                }
+                
+                // Appliquer les contraintes
+                applyAttributeConstraints(vendorProduct, constraints);
+            }
+            
+            updateRestaurantAttributePrice(vendorProduct);
+            updateAttributeSelectionInfo(attributeId, attributeItem);
+        });
+    }
+    
+    // Appliquer les contraintes entre attributs
+    function applyAttributeConstraints(vendorProduct, constraints) {
+        if (!constraints || constraints.length === 0) return;
+        
+        constraints.forEach(function(constraint) {
+            var sourceAttrId = constraint.source_attribute_id;
+            var sourceValue = constraint.source_value;
+            var targetAttrId = constraint.target_attribute_id;
+            var maxSelectValue = constraint.max_select;
+            
+            var sourceInput = $('#attribute-list-' + vendorProduct.id + ' .attribute-item[data-attribute-id="' + sourceAttrId + '"] .attribute-option-input[value="' + sourceValue + '"]');
+            
+            if (sourceInput.is(':checked')) {
+                var targetAttribute = $('#attribute-list-' + vendorProduct.id + ' .attribute-item[data-attribute-id="' + targetAttrId + '"]');
+                var currentMax = parseInt(targetAttribute.data('max-select'));
+                
+                // Réduire le max_select du target attribute
+                if (maxSelectValue < currentMax) {
+                    targetAttribute.data('max-select', maxSelectValue);
+                    var selectedCount = targetAttribute.find('.attribute-option-input:checked').length;
+                    
+                    if (selectedCount > maxSelectValue) {
+                        // Désélectionner les options en trop
+                        var excessCount = selectedCount - maxSelectValue;
+                        targetAttribute.find('.attribute-option-input:checked').slice(-excessCount).prop('checked', false);
+                        
+                        Swal.fire({
+                            text: "Due to constraints, you can only select " + maxSelectValue + " option(s) for this attribute",
+                            icon: "info"
+                        });
+                    }
+                }
+            }
+        });
+    }
+    
+    // Mettre à jour le prix total des attributs sélectionnés
+    function updateRestaurantAttributePrice(vendorProduct) {
+        var totalAttributePrice = 0;
+        var basePrice = parseFloat(final_price.price || 0);
+        var disPrice = null;
+        
+        // Utiliser le prix réduit si disponible
+        if (vendorProduct.hasOwnProperty('disPrice') && vendorProduct.disPrice != '' && vendorProduct.disPrice != '0') {
+            disPrice = parseFloat(final_price.dis_price || 0);
+        }
+        
+        $('#attribute-list-' + vendorProduct.id + ' .attribute-option-input:checked').each(function() {
+            var optionPrice = parseFloat($(this).data('option-price') || 0);
+            totalAttributePrice += optionPrice;
+        });
+        
+        var finalPrice = (disPrice !== null ? disPrice : basePrice) + totalAttributePrice;
+        var formattedPrice = getProductFormattedPrice(finalPrice);
+        
+        // Si prix réduit, afficher aussi le prix original
+        if (disPrice !== null) {
+            var originalPrice = basePrice + totalAttributePrice;
+            var formattedOriginalPrice = getProductFormattedPrice(originalPrice);
+            formattedPrice = formattedOriginalPrice + ' <s>' + formattedPrice + '</s>';
+        }
+        
+        // Mettre à jour le prix affiché (si un élément existe pour afficher le prix)
+        if ($('#restaurant-attribute-price-' + vendorProduct.id).length > 0) {
+            $('#restaurant-attribute-price-' + vendorProduct.id).html(formattedPrice);
+        }
+    }
+    
+    // Mettre à jour l'info de sélection pour un attribut
+    function updateAttributeSelectionInfo(attributeId, attributeItem) {
+        var selectType = attributeItem.data('select-type');
+        var minSelect = parseInt(attributeItem.data('min-select'));
+        var maxSelect = parseInt(attributeItem.data('max-select'));
+        var selectedCount = attributeItem.find('.attribute-option-input:checked').length;
+        
+        var infoText = '';
+        if (selectType === 'multiple') {
+            infoText = 'Selected: ' + selectedCount + ' / ' + maxSelect;
+            if (selectedCount < minSelect) {
+                infoText += ' (Minimum: ' + minSelect + ')';
+            }
+        }
+        
+        $('#attribute-info-' + attributeId).text(infoText);
+    }
+
     function getAttributeHtml(vendorProduct, attribute) {
         var html = '';
-        var vendorAttributesRef = database.collection('vendor_attributes').where('id', "==", attribute.attribute_id);
-        attributeHtmlRes = vendorAttributesRef.get().then(async function (attributeRef) {
-            var attributeInfo = attributeRef.docs[0].data();
-            html += '<div class="attribute-drp" data-aid="' + attribute.attribute_id + '" data-atitle="' + attributeInfo.title + '">';
-            html += '<h3 class="attribute-label">' + attributeInfo.title + '</h3>';
-            html += '<div class="attribute-options">';
-            $.each(attribute.attribute_options, function (i, option) {
-                var ischecked = (i == 0) ? 'checked="checked"' : '';
-                html += '<div class="custom-control custom-radio border-bottom py-2 attribute-selection">';
-                html += '<input type="radio" id="attribute-' + attribute.attribute_id + '-' + option + '" name="attribute-options-' + attribute.attribute_id + '" value="' + option + '" ' + ischecked + ' class="custom-control-input">';
-                html += '<label class="custom-control-label" for="attribute-' + attribute.attribute_id + '-' + option + '">' + option + '</label>';
+        var serviceType = getCookie('service_type');
+        var attributesCollection = 'vendor_attributes';
+        
+        // Pour la section restaurants (Multivendor Delivery Service), utiliser item_attributes
+        if (serviceType === 'Multivendor Delivery Service') {
+            attributesCollection = 'item_attributes';
+        }
+        
+        var attributesRef = database.collection(attributesCollection).where('id', "==", attribute.attribute_id);
+        attributeHtmlRes = attributesRef.get().then(async function (attributeRef) {
+            // Si aucun résultat dans item_attributes pour restaurants, essayer vendor_attributes
+            if (attributeRef.docs.length === 0 && serviceType === 'Multivendor Delivery Service') {
+                var vendorAttributesRef = database.collection('vendor_attributes').where('id', "==", attribute.attribute_id);
+                attributeRef = await vendorAttributesRef.get();
+            }
+            
+            if (attributeRef.docs.length > 0) {
+                var attributeInfo = attributeRef.docs[0].data();
+                html += '<div class="attribute-drp" data-aid="' + attribute.attribute_id + '" data-atitle="' + attributeInfo.title + '">';
+                html += '<h3 class="attribute-label">' + attributeInfo.title + '</h3>';
+                html += '<div class="attribute-options">';
+                $.each(attribute.attribute_options, function (i, option) {
+                    var ischecked = (i == 0) ? 'checked="checked"' : '';
+                    html += '<div class="custom-control custom-radio border-bottom py-2 attribute-selection">';
+                    html += '<input type="radio" id="attribute-' + attribute.attribute_id + '-' + option + '" name="attribute-options-' + attribute.attribute_id + '" value="' + option + '" ' + ischecked + ' class="custom-control-input">';
+                    html += '<label class="custom-control-label" for="attribute-' + attribute.attribute_id + '-' + option + '">' + option + '</label>';
+                    html += '</div>';
+                });
                 html += '</div>';
-            });
-            html += '</div>';
-            html += '</div>';
+                html += '</div>';
+            }
             return html;
         })
         return attributeHtmlRes;

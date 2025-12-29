@@ -133,6 +133,15 @@ class ProductController extends Controller
         if (isset($req['variant_info']) && !empty($req['variant_info']['variant_id'])) {
             $id = $id . 'PV' . $req['variant_info']['variant_id'];
         }
+        
+        // Gérer les attributs restaurants
+        $restaurantAttributes = null;
+        $restaurantAttributePrice = 0;
+        if (isset($req['restaurant_attributes']) && !empty($req['restaurant_attributes'])) {
+            $restaurantAttributes = json_decode($req['restaurant_attributes'], true);
+            $restaurantAttributePrice = isset($req['restaurant_attribute_price']) ? floatval($req['restaurant_attribute_price']) : 0;
+        }
+        
         $cart['item'][$vendor_id][$id] = [
             "name" => $req['name'],
             "quantity" => $req['quantity'],
@@ -146,6 +155,8 @@ class ProductController extends Controller
             "image" => @$req['image'],
             "veg" => @$req['veg'],
             "variant_info" => @$req['variant_info'],
+            "restaurant_attributes" => $restaurantAttributes,
+            "restaurant_attribute_price" => $restaurantAttributePrice,
             "category_id" => @$req['category_id'],
         ];
         $cart['vendor']['id'] = @$vendor_id;
@@ -160,6 +171,10 @@ class ProductController extends Controller
             $total_one_item_price = $value_cart['item_price'] * $value_cart['quantity'];
             if (@$value_cart['extra_price']) {
                 $total_one_item_price = $total_one_item_price + ($value_cart['extra_price'] * $value_cart['quantity']);
+            }
+            // Ajouter le prix des attributs restaurants
+            if (isset($value_cart['restaurant_attribute_price']) && $value_cart['restaurant_attribute_price'] > 0) {
+                $total_one_item_price = $total_one_item_price + ($value_cart['restaurant_attribute_price'] * $value_cart['quantity']);
             }
             $total_item_price = $total_item_price + $total_one_item_price;
         }
@@ -330,6 +345,14 @@ class ProductController extends Controller
             if ($value['variant_info']) {
                 $variant_info = $value['variant_info'];
             }
+            $restaurant_attributes = null;
+            $restaurant_attribute_price = 0;
+            if (isset($value['restaurant_attributes']) && $value['restaurant_attributes']) {
+                $restaurant_attributes = $value['restaurant_attributes'];
+            }
+            if (isset($value['restaurant_attribute_price']) && $value['restaurant_attribute_price']) {
+                $restaurant_attribute_price = floatval($value['restaurant_attribute_price']);
+            }
             if ($value['category_id']) {
                 $category_id = $value['category_id'];
             }
@@ -344,6 +367,8 @@ class ProductController extends Controller
                 "size" => @$size,
                 "image" => @$image,
                 "variant_info" => @$variant_info,
+                "restaurant_attributes" => $restaurant_attributes,
+                "restaurant_attribute_price" => $restaurant_attribute_price,
                 "category_id" => @$category_id,
             ];
         }
@@ -359,6 +384,10 @@ class ProductController extends Controller
             $total_one_item_price = $value_cart['item_price'] * $value_cart['quantity'];
             if ($value_cart['extra_price']) {
                 $total_one_item_price = $total_one_item_price + ($value_cart['extra_price'] * $value_cart['quantity']);
+            }
+            // Ajouter le prix des attributs restaurants
+            if (isset($value_cart['restaurant_attribute_price']) && $value_cart['restaurant_attribute_price'] > 0) {
+                $total_one_item_price = $total_one_item_price + ($value_cart['restaurant_attribute_price'] * $value_cart['quantity']);
             }
             $total_item_price = $total_item_price + $total_one_item_price;
         }

@@ -14,7 +14,7 @@ class HomeController extends Controller
      */
     public function __construct()
     {
-        
+
         $route = \Route::currentRouteName();
         if (!isset($_COOKIE['section_id']) && !isset($_COOKIE['address_name']) && $route != "set-location") {
             \Redirect::to('set-location')->send();
@@ -24,7 +24,7 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function index()
     {
@@ -41,6 +41,7 @@ class HomeController extends Controller
         } else if (isset($_COOKIE['service_type']) && $_COOKIE['service_type'] == 'On Demand Service') {
             return view('home_page.ondemand_home');
         }
+        return redirect()->route('set-location');
     }
 
     public function setLocation()

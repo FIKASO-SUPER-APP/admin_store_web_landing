@@ -317,7 +317,29 @@
                         variant_info += '</ul>';
                         variant_info += '</div>';
                     }
-                    order_items += '<td class="prod-name">' + orderDetails.products[i]['name'] + '<div class="extra"><span>{{ trans('lang.extras') }} :</span><span class="ext-item">' + extra_html + variant_info + '</span></div></td>';
+                    // Afficher les attributs restaurants
+                    var restaurant_attributes_html = '';
+                    if (orderDetails.products[i]['restaurant_attributes'] && Object.keys(orderDetails.products[i]['restaurant_attributes']).length > 0) {
+                        restaurant_attributes_html += '<div class="restaurant-attributes mt-1">';
+                        $.each(orderDetails.products[i]['restaurant_attributes'], function(attrId, options) {
+                            if (Array.isArray(options) && options.length > 0) {
+                                restaurant_attributes_html += '<div class="restaurant-attribute-group small text-muted">';
+                                $.each(options, function(index, option) {
+                                    if (option && option.name) {
+                                        restaurant_attributes_html += '<div class="restaurant-attribute-option">';
+                                        restaurant_attributes_html += '• ' + option.name;
+                                        if (option.price && parseFloat(option.price) > 0) {
+                                            restaurant_attributes_html += ' <span class="text-primary">(+' + parseFloat(option.price).toFixed(decimal_degits) + ')</span>';
+                                        }
+                                        restaurant_attributes_html += '</div>';
+                                    }
+                                });
+                                restaurant_attributes_html += '</div>';
+                            }
+                        });
+                        restaurant_attributes_html += '</div>';
+                    }
+                    order_items += '<td class="prod-name">' + orderDetails.products[i]['name'] + '<div class="extra"><span>{{ trans('lang.extras') }} :</span><span class="ext-item">' + extra_html + variant_info + restaurant_attributes_html + '</span></div></td>';
                     order_items += '<td class="qunt">x ' + orderDetails.products[i]['quantity'] + '</td>';
                     order_items += '<td class="extras_price">+ ' + productExtras_val + '</td>';
                     order_items += '<td class="product_price">' + products_price + '</td>';

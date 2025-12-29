@@ -62,6 +62,29 @@ foreach ($cart['item'] as $key => $value_vendor) {
                         echo '</div>';
                     }
                     ?>
+                    <?php if (isset($value_item['restaurant_attributes']) && !empty($value_item['restaurant_attributes'])) {
+                        echo '<div class="restaurant-attributes mt-2">';
+                        foreach ($value_item['restaurant_attributes'] as $attrId => $options) {
+                            if (is_array($options) && count($options) > 0) {
+                                echo '<div class="restaurant-attribute-group mb-1">';
+                                foreach ($options as $option) {
+                                    if (is_array($option) && isset($option['name'])) {
+                                        $optionPrice = isset($option['price']) ? floatval($option['price']) : 0;
+                                        echo '<div class="restaurant-attribute-option small text-muted">';
+                                        echo '• ' . htmlspecialchars($option['name']);
+                                        if ($optionPrice > 0) {
+                                            $digit_decimal = isset($cart['decimal_degits']) ? $cart['decimal_degits'] : 0;
+                                            echo ' <span class="text-primary">(+' . number_format($optionPrice, $digit_decimal) . ')</span>';
+                                        }
+                                        echo '</div>';
+                                    }
+                                }
+                                echo '</div>';
+                            }
+                        }
+                        echo '</div>';
+                    }
+                    ?>
                 </p>
                 <?php if (@$value_item['extra']) { ?>
                 <div class="extras">
@@ -101,7 +124,12 @@ foreach ($cart['item'] as $key => $value_vendor) {
             <p class="text-gray mb-0 float-right ml-3 text-muted small">
                 <span class="currency-symbol-left"></span>
                 <span class="cart_iteam_total_<?php echo $key1; ?>">
-                    <?php $totalItemPrice = @floatval($value_item['price']) + @floatval($value_item['extra_price']) * @floatval($value_item['quantity']);
+                    <?php 
+                    $totalItemPrice = @floatval($value_item['price']) + @floatval($value_item['extra_price']) * @floatval($value_item['quantity']);
+                    // Ajouter le prix des attributs restaurants
+                    if (isset($value_item['restaurant_attribute_price']) && $value_item['restaurant_attribute_price'] > 0) {
+                        $totalItemPrice = $totalItemPrice + (@floatval($value_item['restaurant_attribute_price']) * @floatval($value_item['quantity']));
+                    }
                     $digit_decimal = 0;
                     if (@$cart['decimal_degits']) {
                         $digit_decimal = $cart['decimal_degits'];
@@ -114,7 +142,13 @@ foreach ($cart['item'] as $key => $value_vendor) {
         </div>
         <div class="close remove_item col-md-1" data-vendor="<?php echo $key; ?>" data-id="<?php echo $key1; ?>"><i class="fa fa-times"></i></div>
     </div>
-    <?php $total_price = $total_price + (floatval($value_item['price']) + (@floatval($value_item['extra_price']) * @floatval($value_item['quantity'])));
+    <?php 
+    $itemTotal = floatval($value_item['price']) + (@floatval($value_item['extra_price']) * @floatval($value_item['quantity']));
+    // Ajouter le prix des attributs restaurants
+    if (isset($value_item['restaurant_attribute_price']) && $value_item['restaurant_attribute_price'] > 0) {
+        $itemTotal = $itemTotal + (@floatval($value_item['restaurant_attribute_price']) * @floatval($value_item['quantity']));
+    }
+    $total_price = $total_price + $itemTotal;
     } ?>
     <?php } ?>
     <?php $total_item_price = $total_price; ?>

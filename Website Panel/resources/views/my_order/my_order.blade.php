@@ -183,6 +183,15 @@
                     id = id + 'PV' + variant_info.variant_id;
                 }
                 var category_id = jQuery(this).find('.category_id').val();
+                var restaurant_attributes = null;
+                var restaurant_attribute_price = 0;
+                if (jQuery(this).find('.restaurant_attributes').val()) {
+                    restaurant_attributes = jQuery(this).find('.restaurant_attributes').val();
+                    restaurant_attributes = JSON.parse(atob(restaurant_attributes));
+                }
+                if (jQuery(this).find('.restaurant_attribute_price').val()) {
+                    restaurant_attribute_price = parseFloat(jQuery(this).find('.restaurant_attribute_price').val());
+                }
                 var item_arr = {
                     'id': id,
                     'name': name,
@@ -195,6 +204,8 @@
                     'size': size,
                     'item_price': item_price,
                     'variant_info': variant_info,
+                    'restaurant_attributes': restaurant_attributes,
+                    'restaurant_attribute_price': restaurant_attribute_price,
                     'category_id': category_id
                 }
                 item.push(item_arr);
@@ -346,6 +357,27 @@
                             html = html + '</ul>';
                             html = html + '</div>';
                         }
+                        // Afficher les attributs restaurants
+                        if (val.products[i]['restaurant_attributes'] && Object.keys(val.products[i]['restaurant_attributes']).length > 0) {
+                            html = html + '<div class="restaurant-attributes mt-1">';
+                            $.each(val.products[i]['restaurant_attributes'], function(attrId, options) {
+                                if (Array.isArray(options) && options.length > 0) {
+                                    html = html + '<div class="restaurant-attribute-group small text-muted">';
+                                    $.each(options, function(index, option) {
+                                        if (option && option.name) {
+                                            html = html + '<div class="restaurant-attribute-option">';
+                                            html = html + '• ' + option.name;
+                                            if (option.price && parseFloat(option.price) > 0) {
+                                                html = html + ' <span class="text-primary">(+' + parseFloat(option.price).toFixed(decimal_degits) + ')</span>';
+                                            }
+                                            html = html + '</div>';
+                                        }
+                                    });
+                                    html = html + '</div>';
+                                }
+                            });
+                            html = html + '</div>';
+                        }
                         price = price + val.products[i]['price'] * val.products[i]['quantity'];
                         html = html + '<div class="order_' + String(order_id) + '">';
                         html = html + '<input type="hidden" class="product_id" value="' + String(val.products[i]['id']) + '">';
@@ -361,6 +393,12 @@
                         html = html + '<input type="hidden" class="size" value="' + size + '">';
                         if (val.products[i]['variant_info']) {
                             html = html + '<input type="hidden" class="variant_info" value="' + btoa(JSON.stringify(val.products[i]['variant_info'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attributes']) {
+                            html = html + '<input type="hidden" class="restaurant_attributes" value="' + btoa(JSON.stringify(val.products[i]['restaurant_attributes'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attribute_price']) {
+                            html = html + '<input type="hidden" class="restaurant_attribute_price" value="' + parseFloat(val.products[i]['restaurant_attribute_price']) + '">';
                         }
                         html = html + '<input type="hidden" class="category_id" value="' + val.products[i]['category_id'] + '">';
                         html = html + '</div>';
@@ -528,6 +566,27 @@
                             html = html + '</ul>';
                             html = html + '</div>';
                         }
+                        // Afficher les attributs restaurants
+                        if (val.products[i]['restaurant_attributes'] && Object.keys(val.products[i]['restaurant_attributes']).length > 0) {
+                            html = html + '<div class="restaurant-attributes mt-1">';
+                            $.each(val.products[i]['restaurant_attributes'], function(attrId, options) {
+                                if (Array.isArray(options) && options.length > 0) {
+                                    html = html + '<div class="restaurant-attribute-group small text-muted">';
+                                    $.each(options, function(index, option) {
+                                        if (option && option.name) {
+                                            html = html + '<div class="restaurant-attribute-option">';
+                                            html = html + '• ' + option.name;
+                                            if (option.price && parseFloat(option.price) > 0) {
+                                                html = html + ' <span class="text-primary">(+' + parseFloat(option.price).toFixed(decimal_degits) + ')</span>';
+                                            }
+                                            html = html + '</div>';
+                                        }
+                                    });
+                                    html = html + '</div>';
+                                }
+                            });
+                            html = html + '</div>';
+                        }
                         price = price + val.products[i]['price'] * val.products[i]['quantity'];
                         html = html + '<div class="order_' + String(order_id) + '">';
                         html = html + '<input type="hidden" class="product_id" value="' + String(val.products[i]['id']) + '">';
@@ -541,6 +600,12 @@
                         html = html + '<input type="hidden" class="size" value="' + size + '">';
                         if (val.products[i]['variant_info']) {
                             html = html + '<input type="hidden" class="variant_info" value="' + btoa(JSON.stringify(val.products[i]['variant_info'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attributes']) {
+                            html = html + '<input type="hidden" class="restaurant_attributes" value="' + btoa(JSON.stringify(val.products[i]['restaurant_attributes'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attribute_price']) {
+                            html = html + '<input type="hidden" class="restaurant_attribute_price" value="' + parseFloat(val.products[i]['restaurant_attribute_price']) + '">';
                         }
                         html = html + '<input type="hidden" class="category_id" value="' + val.products[i]['category_id'] + '">';
                         html = html + '</div>';
@@ -686,6 +751,27 @@
                             html = html + '</ul>';
                             html = html + '</div>';
                         }
+                        // Afficher les attributs restaurants
+                        if (val.products[i]['restaurant_attributes'] && Object.keys(val.products[i]['restaurant_attributes']).length > 0) {
+                            html = html + '<div class="restaurant-attributes mt-1">';
+                            $.each(val.products[i]['restaurant_attributes'], function(attrId, options) {
+                                if (Array.isArray(options) && options.length > 0) {
+                                    html = html + '<div class="restaurant-attribute-group small text-muted">';
+                                    $.each(options, function(index, option) {
+                                        if (option && option.name) {
+                                            html = html + '<div class="restaurant-attribute-option">';
+                                            html = html + '• ' + option.name;
+                                            if (option.price && parseFloat(option.price) > 0) {
+                                                html = html + ' <span class="text-primary">(+' + parseFloat(option.price).toFixed(decimal_degits) + ')</span>';
+                                            }
+                                            html = html + '</div>';
+                                        }
+                                    });
+                                    html = html + '</div>';
+                                }
+                            });
+                            html = html + '</div>';
+                        }
                         price = price + val.products[i]['price'] * val.products[i]['quantity'];
                         html = html + '<div class="order_' + String(order_id) + '">';
                         html = html + '<input type="hidden" class="product_id" value="' + String(val.products[i]['id']) + '">';
@@ -699,6 +785,12 @@
                         html = html + '<input type="hidden" class="size" value="' + size + '">';
                         if (val.products[i]['variant_info']) {
                             html = html + '<input type="hidden" class="variant_info" value="' + btoa(JSON.stringify(val.products[i]['variant_info'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attributes']) {
+                            html = html + '<input type="hidden" class="restaurant_attributes" value="' + btoa(JSON.stringify(val.products[i]['restaurant_attributes'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attribute_price']) {
+                            html = html + '<input type="hidden" class="restaurant_attribute_price" value="' + parseFloat(val.products[i]['restaurant_attribute_price']) + '">';
                         }
                         html = html + '<input type="hidden" class="category_id" value="' + val.products[i]['category_id'] + '">';
                         html = html + '</div>';
@@ -844,6 +936,27 @@
                             html = html + '</ul>';
                             html = html + '</div>';
                         }
+                        // Afficher les attributs restaurants
+                        if (val.products[i]['restaurant_attributes'] && Object.keys(val.products[i]['restaurant_attributes']).length > 0) {
+                            html = html + '<div class="restaurant-attributes mt-1">';
+                            $.each(val.products[i]['restaurant_attributes'], function(attrId, options) {
+                                if (Array.isArray(options) && options.length > 0) {
+                                    html = html + '<div class="restaurant-attribute-group small text-muted">';
+                                    $.each(options, function(index, option) {
+                                        if (option && option.name) {
+                                            html = html + '<div class="restaurant-attribute-option">';
+                                            html = html + '• ' + option.name;
+                                            if (option.price && parseFloat(option.price) > 0) {
+                                                html = html + ' <span class="text-primary">(+' + parseFloat(option.price).toFixed(decimal_degits) + ')</span>';
+                                            }
+                                            html = html + '</div>';
+                                        }
+                                    });
+                                    html = html + '</div>';
+                                }
+                            });
+                            html = html + '</div>';
+                        }
                         price = price + val.products[i]['price'] * val.products[i]['quantity'];
                         html = html + '<div class="order_' + String(order_id) + '">';
                         html = html + '<input type="hidden" class="product_id" value="' + String(val.products[i]['id']) + '">';
@@ -857,6 +970,12 @@
                         html = html + '<input type="hidden" class="size" value="' + size + '">';
                         if (val.products[i]['variant_info']) {
                             html = html + '<input type="hidden" class="variant_info" value="' + btoa(JSON.stringify(val.products[i]['variant_info'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attributes']) {
+                            html = html + '<input type="hidden" class="restaurant_attributes" value="' + btoa(JSON.stringify(val.products[i]['restaurant_attributes'])) + '">';
+                        }
+                        if (val.products[i]['restaurant_attribute_price']) {
+                            html = html + '<input type="hidden" class="restaurant_attribute_price" value="' + parseFloat(val.products[i]['restaurant_attribute_price']) + '">';
                         }
                         html = html + '<input type="hidden" class="category_id" value="' + val.products[i]['category_id'] + '">';
                         html = html + '</div>';
