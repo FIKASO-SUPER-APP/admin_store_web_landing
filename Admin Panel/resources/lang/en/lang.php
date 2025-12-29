@@ -2322,6 +2322,10 @@ return [
     'secteur_pairs_list' => "Sector pairs list",
     'secteur_pair_already_exists' => "This sector pair already exists",
     'item_attribute_plural' => 'Item Attributes',
+    'system_dispatch' => "System Dispatch",
+    'enable_system_dispatch' => "Enable automatic dispatch",
+    'system_dispatch_note' => "Note:",
+    'system_dispatch_help' => "If enabled, the system will automatically assign orders to delivery drivers. If disabled, assignment will be done manually.",
     'unknown_user' => 'Unknown User',
 ];
 ?>

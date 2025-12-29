@@ -109,6 +109,18 @@
                             </div>
                         </div>
                     </fieldset>
+
+                    <fieldset style="margin-top: 30px;">
+                        <legend>{{trans('lang.system_dispatch')}}</legend>
+                        <div class="form-check width-100">
+                            <input type="checkbox" class="form-check-inline" id="system_dispatch_enabled">
+                            <label class="col-5 control-label" for="system_dispatch_enabled">{{ trans('lang.enable_system_dispatch')}}</label>
+                        </div>
+                        <div class="form-text text-muted pl-4">
+                            <strong>{{ trans('lang.system_dispatch_note')}}</strong><br>
+                            {{ trans('lang.system_dispatch_help')}}
+                        </div>
+                    </fieldset>
                 </div>
             </div>
             <div class="form-group col-12 text-center">
@@ -125,6 +137,7 @@
     var ref_deliverycharge = database.collection('settings').doc("DeliveryCharge");
     var driverNearBy = database.collection('settings').doc("DriverNearBy");
     var ref_secteur_delivery = database.collection('settings').doc("SecteurDelivery");
+    var ref_system_dispatch = database.collection('settings').doc("SystemDispatch");
     var secteurPairs = []; // Stocker les couples de secteurs en mémoire
 
     $(document).ready(function () {
@@ -163,6 +176,18 @@
                 
                 // Charger les couples de secteurs depuis la collection secteur_delivery
                 await loadSecteurPairs();
+            }
+        }).catch(function(error) {
+            console.error("Error loading secteur delivery:", error);
+        });
+
+        // Charger les paramètres de SystemDispatch
+        ref_system_dispatch.get().then(async function (snapshot) {
+            var systemDispatchSettings = snapshot.data();
+            if (systemDispatchSettings) {
+                if (systemDispatchSettings.enabled) {
+                    $("#system_dispatch_enabled").prop('checked', true);
+                }
             }
             jQuery("#data-table_processing").hide();
         }).catch(function(error) {
@@ -312,6 +337,12 @@
                 });
                 await batch.commit();
             }
+
+            // Sauvegarder les paramètres de SystemDispatch
+            var systemDispatchEnabled = $("#system_dispatch_enabled").is(":checked");
+            await database.collection('settings').doc("SystemDispatch").set({
+                'enabled': systemDispatchEnabled
+            }, { merge: true });
 
             window.location.href = '{{ url("settings/app/deliveryCharge")}}';
         });
