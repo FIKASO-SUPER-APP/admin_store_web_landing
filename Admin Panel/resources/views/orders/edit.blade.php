@@ -145,11 +145,13 @@
                                                     <div class="form-group row width-100 non-printable" id="manual_dispatch_section" style="display: none;">
                                                         <label class="col-3 control-label">{{ trans('lang.assign_delivery_man') }}:</label>
                                                         <div class="col-7">
-                                                            <select name="manual_deliveryman" class="form-control" id="manual_deliveryman_list">
-                                                                <option value="">{{ trans('lang.select_deliveryman') }}</option>
-                                                            </select>
-                                                            <div id="manual_select_deliveryman_error" style="color:red"></div>
-                                                            <button type="button" class="btn btn-success mt-2" id="manual_assign_deliveryman_btn">
+                                                            <div class="mb-3">
+                                                                <select name="manual_deliveryman" class="form-control" id="manual_deliveryman_list" style="width: 100%;">
+                                                                    <option value="">{{ trans('lang.select_deliveryman') }}</option>
+                                                                </select>
+                                                            </div>
+                                                            <div id="manual_select_deliveryman_error" style="color:red; margin-bottom: 10px;"></div>
+                                                            <button type="button" class="btn btn-success mt-5" id="manual_assign_deliveryman_btn" style="margin-top: 10px;">
                                                                 <i class="fa fa-check"></i> {{ trans('lang.assign') }}
                                                             </button>
                                                         </div>
@@ -577,7 +579,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/printThis/1.15.0/printThis.js"></script>
 
     <script type="text/javascript">
-        
+
         var adminCommission = 0;
         var adminCommissionValue = 0;
         var id = "<?php echo $id; ?>";
@@ -709,7 +711,7 @@
                 singleOrderReceive = true;
             }
         })
-        
+
         // Récupérer le paramètre SystemDispatch
         refSystemDispatch.get().then(async function(snapshot) {
             var systemDispatchData = snapshot.data();
@@ -838,7 +840,7 @@
                             .text(data.name));
                     })
                 });
-                
+
                 if (order.vendor.section_id != undefined && order.vendor.section_id != '') {
                     await database.collection('sections').doc(order.vendor.section_id).get().then(async function(snapshot) {
                         service_type = snapshot.data().serviceTypeFlag;
@@ -849,11 +851,17 @@
                                 commissionModel = true;
                             }
                         }
-                        
+
                         // Afficher la section d'assignation manuelle si SystemDispatch est désactivé et que c'est un restaurant
-                        // Afficher uniquement si la commande n'est pas encore complétée ou annulée
+                        // Afficher uniquement si la commande est acceptée (Order Accepted) ou statut ultérieur
+                        // Mais pas si elle est complétée, annulée ou rejetée
                         if (!systemDispatchEnabled && service_type == "delivery-service" && !order.takeAway) {
-                            if (order.status != 'Order Completed' && order.status != 'Order Cancelled' && order.status != 'Order Rejected') {
+                            // Statuts autorisés pour l'assignation manuelle
+                            var allowedStatuses = ['Order Accepted', 'Driver Pending'/*, 'Order Shipped', 'In Transit'*/];
+                            // Statuts interdits
+                            var forbiddenStatuses = ['Order Placed', 'Order Completed', 'Order Cancelled', 'Order Rejected', 'Driver Rejected'];
+
+                            if (allowedStatuses.includes(order.status) && !forbiddenStatuses.includes(order.status)) {
                                 $('#manual_dispatch_section').show();
                                 // Charger tous les deliverymen pour l'assignation manuelle
                                 await getManualDeliverymanList(order.vendorID);
@@ -1153,17 +1161,17 @@
                 if (order.hasOwnProperty('payment_method')) {
                     orderPaymentMethod = order.payment_method;
                 }
-                
+
                 $("#order_status option[value='" + order.status + "']").attr("selected", "selected");
 
                 if (order.status == 'Order Placed') {
                     $('#order_canceled').hide();
                 }
-                
+
                 if (order.status == "Order Rejected" || order.status == "Driver Rejected" || order.status == "Order Cancelled" || order.status == "Order Completed") {
                     $("#order_status").prop("disabled", true);
                 }
-                
+
                 if (order.status != 'Order Placed') {
 
                     $('#order_accepted').hide();
@@ -1327,25 +1335,25 @@
 
 
             }
-            
+
             // Fonction pour charger la liste des deliverymen pour l'assignation manuelle (tous les deliverymen)
             async function getManualDeliverymanList(vendorID) {
                 $('#manual_deliveryman_list').empty();
                 $('#manual_deliveryman_list').append('<option value="">{{ trans("lang.select_deliveryman") }}</option>');
-                
+
                 // Charger tous les deliverymen (pas seulement ceux du vendor)
                 var query = database.collection('users').where('role', '==', 'driver').where('isActive', '==', true);
-                
+
                 // Filtrer par serviceType si c'est un restaurant (delivery-service)
                 if (service_type == "delivery-service") {
                     query = query.where('serviceType', '==', 'delivery-service');
                 }
-                
+
                 query.get().then(async function(snapshot) {
                     if (snapshot.docs.length > 0) {
                         snapshot.docs.forEach((listval) => {
                             var data = listval.data();
-                            
+
                             if (singleOrderReceive) {
                                 let option = $("<option></option>")
                                     .attr("value", data.id)
@@ -1372,7 +1380,7 @@
                     }
                 });
             }
-            
+
             // Assigner manuellement un deliveryman
             $('#manual_assign_deliveryman_btn').click(async function() {
                 var deliverymanId = $('#manual_deliveryman_list').val();
@@ -1381,7 +1389,7 @@
                     return false;
                 }
                 $('#manual_select_deliveryman_error').html('');
-                
+
                 // Récupérer les données du deliveryman
                 var driverData = '';
                 var fcmTokenDriver = '';
@@ -1389,28 +1397,28 @@
                     if (snapshot.docs.length > 0) {
                         driverData = snapshot.docs[0].data();
                         fcmTokenDriver = driverData.fcmToken;
-                        
+
                         // Mettre à jour les orderRequestData et inProgressOrderID du driver
                         var orderRequestData = [];
                         var inProgressOrderID = [];
-                        
+
                         if (driverData.hasOwnProperty('orderRequestData') && driverData.orderRequestData != null && driverData.orderRequestData != '') {
                             orderRequestData = driverData.orderRequestData;
                         }
                         if (driverData.hasOwnProperty('inProgressOrderID') && driverData.inProgressOrderID != null && driverData.inProgressOrderID != '') {
                             inProgressOrderID = driverData.inProgressOrderID;
                         }
-                        
+
                         orderRequestData.push(id);
                         inProgressOrderID.push(id);
-                        
+
                         await database.collection('users').doc(deliverymanId).update({
                             'orderRequestData': orderRequestData,
                             'inProgressOrderID': inProgressOrderID
                         });
                     }
                 });
-                
+
                 // Mettre à jour la commande avec le deliveryman assigné
                 await database.collection('vendor_orders').doc(id).update({
                     'driverID': deliverymanId,
@@ -1432,7 +1440,7 @@
                             }
                         });
                     }
-                    
+
                     alert('{{ trans("lang.deliveryman_assigned_successfully") }}');
                     window.location.reload();
                 });
@@ -1519,7 +1527,7 @@
                 });
             });
 
-          
+
             async function callWalletTransaction(status) {
                 var orderStatus = status;
 
@@ -2775,14 +2783,14 @@
                             transactionUser: 'customer',
                             note: 'Order amount refunded'
                         });
-                        
+
                     } else {
                         const customerDoc = await database.collection('users').doc(customerId).get();
                         if (customerDoc.exists) {
                             customerFcm = customerDoc.data().fcmToken || '';
                         }
                     }
-                    
+
                     if (orderData.hasOwnProperty('driverID') && orderData.driverID != null && orderData.driverID != '') {
                         await database.collection('users').doc(orderData.driverID).get().then(async function(snapshot) {
                             let newOrderRequestData = [];
@@ -2848,7 +2856,7 @@
 
                         }
                     });
-                    
+
                     window.location.href = '{{ route('orders') }}';
                 } catch (error) {
                     console.error("Error in getRefund:", error);
