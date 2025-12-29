@@ -851,5 +851,6 @@ return [
     'no' => 'No',
     'please_enter_label_and_value' => 'Please enter Label and Value',
     'this_is_for_demo_we_can_not_allow_to_delete' => 'This is for demo, We can not allow to delete',
+    'item_attribute_plural' => 'Item Attributes',
 ];
 ?>

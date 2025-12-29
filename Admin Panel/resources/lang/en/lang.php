@@ -2321,6 +2321,7 @@ return [
     'add_pair' => "Add pair",
     'secteur_pairs_list' => "Sector pairs list",
     'secteur_pair_already_exists' => "This sector pair already exists",
+    'item_attribute_plural' => 'Item Attributes',
     'unknown_user' => 'Unknown User',
 ];
 ?>

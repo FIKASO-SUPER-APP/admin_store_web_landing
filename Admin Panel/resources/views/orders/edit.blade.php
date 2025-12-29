@@ -1983,6 +1983,27 @@
                     html = html + '</div>';
                 }
 
+                // Display selected_attributes if they exist
+                if (product.selected_attributes && product.selected_attributes.length > 0) {
+                    html = html + '<div class="selected-attributes-info" style="margin-top: 10px;">';
+                    html = html + '<strong>{{ trans("lang.item_attribute_plural") }} :</strong>';
+                    html = html + '<ul style="list-style: none; padding-left: 0; margin-top: 5px;">';
+                    product.selected_attributes.forEach(function(attribute) {
+                        html = html + '<li style="margin-bottom: 8px;">';
+                        html = html + '<strong>' + attribute.attribute_name + ' :</strong> ';
+                        if (attribute.selected_options && attribute.selected_options.length > 0) {
+                            var optionsList = [];
+                            attribute.selected_options.forEach(function(option) {
+                                optionsList.push(option.name);
+                            });
+                            html = html + optionsList.join(', ');
+                        }
+                        html = html + '</li>';
+                    });
+                    html = html + '</ul>';
+                    html = html + '</div>';
+                }
+
                 if (extra_count > 1 || product.size) {
                     html = html + '<strong>{{ trans('lang.extras') }} :</strong>';
                 }
