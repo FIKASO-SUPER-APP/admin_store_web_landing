@@ -568,6 +568,68 @@
             var storeOrderInTransitSubject = "";
             var storeOrderInTransitMsg = "";
 
+            // Variable pour stocker l'URL de la sonnerie
+            var orderRingtoneUrl = '';
+
+            // Fonction pour récupérer l'URL de la sonnerie depuis globalSettings
+            async function loadOrderRingtone() {
+                try {
+                    var refGlobalSettings = database.collection('settings').doc("globalSettings");
+                    await refGlobalSettings.get().then(async function(snapshot) {
+                        var globalSettings = snapshot.data();
+                        if (globalSettings && globalSettings.order_ringtone_url) {
+                            orderRingtoneUrl = globalSettings.order_ringtone_url;
+                            console.log("Sonnerie de commande chargée:", orderRingtoneUrl);
+                        } else {
+                            console.log("Aucune sonnerie configurée dans globalSettings");
+                        }
+                    });
+                } catch (error) {
+                    console.error("Erreur lors de la récupération de la sonnerie:", error);
+                }
+            }
+
+            // Charger la sonnerie au démarrage
+            loadOrderRingtone();
+
+            // Fonction pour jouer la sonnerie
+            function playOrderRingtone(ringtoneUrl) {
+                try {
+                    if (!ringtoneUrl || ringtoneUrl === '') {
+                        console.log("Aucune sonnerie configurée - La sonnerie ne sera pas jouée");
+                        return;
+                    }
+
+                    console.log("Tentative de lecture de la sonnerie:", ringtoneUrl);
+
+                    // Créer un élément audio
+                    var audio = new Audio(ringtoneUrl);
+
+                    // Gérer les erreurs de chargement
+                    audio.addEventListener('error', function(e) {
+                        console.error("Erreur lors du chargement de l'audio:", e);
+                        console.error("Code d'erreur:", audio.error ? audio.error.code : 'unknown');
+                    });
+
+                    // Configurer l'audio
+                    audio.volume = 1.0; // Volume maximum
+
+                    // Tenter de jouer l'audio
+                    var playPromise = audio.play();
+
+                    if (playPromise !== undefined) {
+                        playPromise.then(function() {
+                            console.log("Sonnerie de commande jouée avec succès");
+                        }).catch(function(error) {
+                            console.error("Erreur lors de la lecture de la sonnerie:", error);
+                            console.error("Détails:", error.message);
+                        });
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de la création de l'élément audio:", error);
+                }
+            }
+
             database.collection('dynamic_notification').get().then(async function(snapshot) {
                 if (snapshot.docs.length > 0) {
                     snapshot.docs.map(async (listval) => {
@@ -641,6 +703,8 @@
                                     if (route1) {
                                         jQuery("#notification_url").attr("href", route1.replace(':id', val.id));
                                     }
+                                    // Jouer la sonnerie si configurée
+                                    playOrderRingtone(orderRingtoneUrl);
                                     jQuery("#notification_order").modal('show');
 
                                 }
@@ -662,6 +726,8 @@
                                             $('.order_subject').text(orderPlacedSubject);
                                             $('.order_message').text(orderPlacedMsg);
                                         }
+                                        // Jouer la sonnerie si configurée
+                                        playOrderRingtone(orderRingtoneUrl);
                                         jQuery("#notification_order").modal('show');
                                     }
 
