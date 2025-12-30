@@ -563,8 +563,9 @@
                         <legend><i class="mr-3 mdi mdi-music-box"></i>{{ trans('lang.order_ringtone_setting') }}</legend>
                         <div class="form-group row width-100">
                             <div class="form-check width-100">
-                                <input type="file" id="ringtone_file" onchange="handleRingtoneSelect(event)">
+                                <input type="file" id="ringtone_file" accept="audio/mp3,audio/mpeg,.mp3" onchange="handleRingtoneSelect(event)">
                                 <div class="ringtone_file mt-2"></div>
+                                <div id="ringtone_file_name" class="mt-2 text-success" style="display:none;"></div>
                                 <div class="form-text text-muted w-50">{!! nl2br(trans('lang.audio_information')) !!}
                                 </div>
                             </div>
@@ -987,7 +988,9 @@ if (globalSettings.defaultCountryCode) {
 
                     if (globalSettings.order_ringtone_url != '' && globalSettings.order_ringtone_url != null) {
                         audioData = globalSettings.order_ringtone_url;
+                        oldAudioData = globalSettings.order_ringtone_url;
                         oldVideo = globalSettings.order_ringtone_url;
+                        console.log("Sonnerie existante chargée:", oldAudioData);
                         var html = '<div class="col-md-3">\n' +
                             '<div class="audio-inner">\n' +
                             '  <audio controls>\n' +
@@ -1618,8 +1621,10 @@ if (globalSettings.defaultCountryCode) {
                     jQuery("#data-table_processing").show();
 
 
-                    await storeRingtone().then(ringtone => {
-                        database.collection('settings').doc("globalSettings").update({
+                    await storeRingtone().then(async (ringtone) => {
+                        console.log("Ringtone URL à sauvegarder:", ringtone);
+                        
+                        await database.collection('settings').doc("globalSettings").update({
 
                             'website_color': website_color,
 
@@ -1652,12 +1657,18 @@ if (globalSettings.defaultCountryCode) {
                            
                             'defaultCountryCode': defaultCountryCode // Add this line
 
+                        }).then(() => {
+                            console.log("Paramètres globaux mis à jour avec succès, y compris order_ringtone_url:", ringtone);
+                        }).catch((error) => {
+                            console.error("Erreur lors de la mise à jour de globalSettings:", error);
+                            throw error;
                         });
                     }).catch(err => {
+                        console.error("Erreur dans storeRingtone:", err);
                         jQuery("#data-table_processing").hide();
                         $(".error_top").show();
                         $(".error_top").html("");
-                        $(".error_top").append("<p>" + err + "</p>");
+                        $(".error_top").append("<p>Erreur lors de l'enregistrement de la sonnerie: " + err.message + "</p>");
                         window.scrollTo(0, 0);
                     });
 
@@ -1818,6 +1829,11 @@ if (globalSettings.defaultCountryCode) {
 
 
         var storageRef = firebase.storage().ref('images');
+        var storageAudioRef = firebase.storage().ref('audio');
+        var audioData = '';
+        var audioFileName = '';
+        var oldAudioData = '';
+        var oldVideo = '';
 
 
 
@@ -2204,14 +2220,33 @@ if (globalSettings.defaultCountryCode) {
         }
         async function handleRingtoneSelect(evt) {
             var f = evt.target.files[0];
+            
+            // Vérifier d'abord si un fichier a été sélectionné
+            if (!f) {
+                console.log("Aucun fichier sélectionné");
+                return false;
+            }
+            
             var reader = new FileReader();
             var isAudio = document.getElementById('ringtone_file');
             var audioValue = isAudio.value;
             var allowedExtensions = /(\.mp3)$/i;
+            
+            // Vérifier l'extension du fichier
             if (!allowedExtensions.exec(audioValue)) {
                 $(".error_top").show();
                 $(".error_top").html("");
-                $(".error_top").append("<p>Error: Invalid audio type</p>");
+                $(".error_top").append("<p>Error: Invalid audio type. Only MP3 files are allowed.</p>");
+                window.scrollTo(0, 0);
+                isAudio.value = '';
+                return false;
+            }
+
+            // Vérifier le type MIME du fichier
+            if (f.type && !f.type.match('audio/mpeg') && !f.type.match('audio/mp3')) {
+                $(".error_top").show();
+                $(".error_top").html("");
+                $(".error_top").append("<p>Error: Invalid audio type. Only MP3 files are allowed.</p>");
                 window.scrollTo(0, 0);
                 isAudio.value = '';
                 return false;
@@ -2220,13 +2255,22 @@ if (globalSettings.defaultCountryCode) {
             var audio = document.createElement('audio');
             audio.preload = 'metadata';
 
+            // Gérer les erreurs de chargement de l'audio
+            audio.onerror = function() {
+                $(".error_top").show();
+                $(".error_top").html("");
+                $(".error_top").append("<p>Error: Unable to load audio file. Please check if the file is a valid MP3.</p>");
+                window.scrollTo(0, 0);
+                isAudio.value = '';
+            };
+
             audio.onloadedmetadata = function() {
                 window.URL.revokeObjectURL(audio.src);
 
                 reader.onload = (function(theFile) {
                     return function(e) {
                         var filePayload = e.target.result;
-                        var val = f.name;
+                        var val = theFile.name;
                         var ext = val.split('.').pop(); // get the extension
                         var filename = val.replace(/C:\\fakepath\\/i, '');
 
@@ -2249,7 +2293,13 @@ if (globalSettings.defaultCountryCode) {
                             '</div>';
 
                         jQuery(".ringtone_file").append(html);
-                        $("#ringtone_file").val('');
+                        
+                        // Afficher le nom du fichier sélectionné
+                        $("#ringtone_file_name").html('<i class="fa fa-check-circle text-success"></i> Fichier sélectionné: <strong>' + theFile.name + '</strong>');
+                        $("#ringtone_file_name").show();
+                        
+                        // Ne pas effacer la valeur du champ pour que le nom du fichier reste visible
+                        // Le champ input file gardera automatiquement le nom du fichier
                     };
                 })(f);
 
@@ -2260,57 +2310,94 @@ if (globalSettings.defaultCountryCode) {
 
         }
         async function storeRingtone() {
-            var newAudioURL = audioData;
+            console.log("storeRingtone appelée - audioData:", audioData ? (audioData.substring(0, 50) + "...") : "vide");
+            console.log("storeRingtone appelée - oldAudioData:", oldAudioData ? (oldAudioData.substring(0, 50) + "...") : "vide");
+            console.log("storeRingtone appelée - audioFileName:", audioFileName);
+            
+            var newAudioURL = oldAudioData || ''; // Par défaut, garder l'ancienne URL
+            
             try {
-                if (audioData && audioData !== oldAudioData) {
-                    if (oldAudioData) {
+                // Vérifier si audioData existe et est une nouvelle donnée (base64)
+                if (audioData && (audioData.startsWith('data:audio/') || audioData.startsWith('data:'))) {
+                    console.log("Nouveau fichier audio détecté (base64), début de l'upload...");
+                    
+                    // Supprimer l'ancien fichier si il existe
+                    if (oldAudioData && oldAudioData.startsWith('https://')) {
                         try {
+                            var storage = firebase.storage();
                             var OldImageUrlRef = await storage.refFromURL(oldAudioData);
                             var envBucket = "<?php echo env('FIREBASE_STORAGE_BUCKET'); ?>";
                             if (OldImageUrlRef.bucket === envBucket) {
                                 await OldImageUrlRef.delete();
-                                console.log("Old file deleted!");
+                                console.log("Ancien fichier audio supprimé!");
                             } else {
-                                console.log('Bucket not matched');
+                                console.log('Bucket ne correspond pas');
                             }
                         } catch (error) {
-                            console.log("Error deleting old file:", error);
+                            console.log("Erreur lors de la suppression de l'ancien fichier audio:", error);
+                            // Ne pas bloquer l'upload si la suppression échoue
                         }
                     }
 
+                    // Vérifier que audioFileName est défini
+                    if (!audioFileName || audioFileName === '') {
+                        var timestamp = Number(new Date());
+                        audioFileName = 'ringtone_' + timestamp + '.mp3';
+                        console.log("audioFileName généré:", audioFileName);
+                    }
+
                     var base64String = audioData.split(',')[1];
+                    if (!base64String) {
+                        throw new Error("Format de données base64 invalide");
+                    }
+                    
                     var audioBlob = base64ToBlob(base64String, 'audio/mp3');
                     var uploadTask = storageAudioRef.child(audioFileName).put(audioBlob);
-
 
                     newAudioURL = await new Promise((resolve, reject) => {
                         uploadTask.on(
                             'state_changed',
                             (snapshot) => {
                                 var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                                console.log(`Upload is ${progress}% done`);
+                                console.log(`Upload audio: ${progress.toFixed(2)}%`);
                             },
                             (error) => {
-                                console.log("Error uploading video:", error);
-                                reject(error); // Reject promise if an error occurs
+                                console.error("Erreur lors de l'upload audio:", error);
+                                reject(error);
                             },
                             async () => {
                                 try {
                                     let downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
                                     audioData = downloadURL;
-                                    console.log("Video available at:", downloadURL);
+                                    oldAudioData = downloadURL;
+                                    console.log("Audio uploadé avec succès! URL:", downloadURL);
                                     resolve(downloadURL);
                                 } catch (error) {
+                                    console.error("Erreur lors de la récupération de l'URL:", error);
                                     reject(error);
                                 }
                             }
                         );
                     });
+                } else if (audioData && audioData.startsWith('https://')) {
+                    // C'est déjà une URL (fichier déjà uploadé), on la retourne telle quelle
+                    console.log("Audio déjà uploadé, utilisation de l'URL existante:", audioData);
+                    newAudioURL = audioData;
+                } else if (!audioData || audioData === '') {
+                    // Aucun nouveau fichier sélectionné, garder l'ancienne URL
+                    console.log("Aucun nouveau fichier audio, conservation de l'URL existante:", oldAudioData);
+                    newAudioURL = oldAudioData || '';
+                } else {
+                    console.log("Format audioData non reconnu, conservation de l'ancienne URL");
+                    newAudioURL = oldAudioData || '';
                 }
             } catch (error) {
-                console.log("Error uploading video:", error);
+                console.error("Erreur dans storeRingtone:", error);
+                // En cas d'erreur, retourner l'ancienne URL si elle existe
+                newAudioURL = oldAudioData || '';
             }
 
+            console.log("storeRingtone retourne:", newAudioURL ? (newAudioURL.substring(0, 50) + "...") : "vide");
             return newAudioURL;
         }
 

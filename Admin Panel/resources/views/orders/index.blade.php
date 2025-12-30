@@ -909,7 +909,161 @@
                     }
                 }, 300));
             });
+
+            // ✅ Écouter les nouvelles commandes en temps réel pour jouer la sonnerie
+            setupOrderRingtoneListener();
         });
+
+        // Fonction pour configurer l'écoute des nouvelles commandes et jouer la sonnerie
+        async function setupOrderRingtoneListener() {
+            var database = firebase.firestore();
+            var section_id = getCookie('section_id') || null;
+            
+            // Vérifier si SystemDispatch est activé
+            var refSystemDispatch = database.collection('settings').doc("SystemDispatch");
+            var systemDispatchEnabled = false;
+            
+            await refSystemDispatch.get().then(async function(snapshot) {
+                var systemDispatchData = snapshot.data();
+                if (systemDispatchData && systemDispatchData.enabled) {
+                    systemDispatchEnabled = true;
+                }
+            });
+
+            // Si SystemDispatch est activé, ne pas jouer la sonnerie
+            if (systemDispatchEnabled) {
+                console.log("System Dispatch est activé - La sonnerie ne sera pas jouée");
+                return;
+            }
+
+            // Récupérer l'URL de la sonnerie depuis globalSettings
+            var refGlobalSettings = database.collection('settings').doc("globalSettings");
+            var ringtoneUrl = '';
+            
+            await refGlobalSettings.get().then(async function(snapshot) {
+                var globalSettings = snapshot.data();
+                if (globalSettings && globalSettings.order_ringtone_url) {
+                    ringtoneUrl = globalSettings.order_ringtone_url;
+                    console.log("Sonnerie trouvée:", ringtoneUrl);
+                } else {
+                    console.log("Aucune sonnerie configurée dans globalSettings");
+                }
+            }).catch(function(error) {
+                console.error("Erreur lors de la récupération de globalSettings:", error);
+            });
+
+            // Si pas de sonnerie configurée, ne pas continuer
+            if (!ringtoneUrl || ringtoneUrl === '') {
+                console.log("Aucune sonnerie configurée - La sonnerie ne sera pas jouée");
+                return;
+            }
+
+            // Timestamp pour ne détecter que les commandes créées après le chargement de la page
+            var pageLoadTime = firebase.firestore.Timestamp.now();
+            
+            // Stocker les IDs des commandes existantes pour éviter de jouer la sonnerie pour elles
+            var existingOrderIds = new Set();
+            var ordersRef = database.collection('vendor_orders');
+            
+            // Filtrer par section si une section est sélectionnée
+            if (section_id) {
+                ordersRef = ordersRef.where('section_id', '==', section_id);
+            }
+            
+            // Récupérer d'abord les commandes existantes pour les ignorer
+            await ordersRef.where('status', '==', 'Order Placed').get().then(function(snapshot) {
+                snapshot.forEach(function(doc) {
+                    existingOrderIds.add(doc.id);
+                });
+            });
+            
+            // Maintenant écouter uniquement les nouvelles commandes
+            var newOrdersRef = database.collection('vendor_orders');
+            if (section_id) {
+                newOrdersRef = newOrdersRef.where('section_id', '==', section_id);
+            }
+            newOrdersRef = newOrdersRef.where('status', '==', 'Order Placed');
+            
+            // Écouter les nouvelles commandes en temps réel
+            var unsubscribe = newOrdersRef.onSnapshot(function(snapshot) {
+                snapshot.docChanges().forEach(function(change) {
+                    if (change.type === 'added') {
+                        var orderId = change.doc.id;
+                        var orderData = change.doc.data();
+                        
+                        // Ignorer les commandes qui existaient déjà au chargement
+                        if (existingOrderIds.has(orderId)) {
+                            return;
+                        }
+                        
+                        // Vérifier que la commande a été créée après le chargement de la page
+                        var orderCreatedAt = orderData.createdAt;
+                        if (orderCreatedAt && orderCreatedAt.toMillis() > pageLoadTime.toMillis()) {
+                            // Vérifier que c'est une section restaurant (delivery-service)
+                            if (orderData.section_id) {
+                                database.collection('sections').doc(orderData.section_id).get().then(async function(sectionSnapshot) {
+                                    var sectionData = sectionSnapshot.data();
+                                    if (sectionData && sectionData.serviceTypeFlag === 'delivery-service') {
+                                        // C'est une section restaurant - jouer la sonnerie
+                                        console.log("Nouvelle commande détectée dans la section restaurant - Jouer la sonnerie");
+                                        playOrderRingtone(ringtoneUrl);
+                                    }
+                                }).catch(function(error) {
+                                    console.error("Erreur lors de la vérification de la section:", error);
+                                });
+                            }
+                        }
+                    }
+                });
+            }, function(error) {
+                console.error("Erreur lors de l'écoute des commandes:", error);
+            });
+
+            // Nettoyer le listener quand la page est fermée
+            window.addEventListener('beforeunload', function() {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            });
+        }
+
+        // Fonction pour jouer la sonnerie
+        function playOrderRingtone(ringtoneUrl) {
+            try {
+                if (!ringtoneUrl || ringtoneUrl === '') {
+                    console.error("URL de sonnerie vide ou invalide");
+                    return;
+                }
+                
+                console.log("Tentative de lecture de la sonnerie:", ringtoneUrl);
+                
+                // Créer un élément audio
+                var audio = new Audio(ringtoneUrl);
+                
+                // Gérer les erreurs de chargement
+                audio.addEventListener('error', function(e) {
+                    console.error("Erreur lors du chargement de l'audio:", e);
+                    console.error("Code d'erreur:", audio.error ? audio.error.code : 'unknown');
+                });
+                
+                // Configurer l'audio
+                audio.volume = 1.0; // Volume maximum
+                
+                // Tenter de jouer l'audio
+                var playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(function() {
+                        console.log("Sonnerie de commande jouée avec succès");
+                    }).catch(function(error) {
+                        console.error("Erreur lors de la lecture de la sonnerie:", error);
+                        console.error("Détails:", error.message);
+                    });
+                }
+            } catch (error) {
+                console.error("Erreur lors de la création de l'élément audio:", error);
+            }
+        }
         async function buildHTML(val) {
             var html = [];
             var id = val.id;
