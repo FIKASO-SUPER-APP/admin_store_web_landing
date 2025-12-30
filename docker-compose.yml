@@ -1,0 +1,179 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: fikaso_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fikaso_root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fikaso_db}
+      TZ: ${TZ:-Africa/Abidjan}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - fikaso_network
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Admin Panel
+  admin_panel:
+    build:
+      context: ./Admin Panel
+      dockerfile: Dockerfile
+    container_name: fikaso_admin_panel
+    restart: unless-stopped
+    volumes:
+      - ./Admin Panel:/var/www/html
+      - admin_storage:/var/www/html/storage
+      - admin_bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - fikaso_network
+    depends_on:
+      - mysql
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_HOST=mysql
+      - DB_DATABASE=${ADMIN_DB_NAME:-fikaso_admin}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-fikaso_root_password}
+
+  # Admin Panel Nginx
+  admin_nginx:
+    image: nginx:alpine
+    container_name: fikaso_admin_nginx
+    restart: unless-stopped
+    volumes:
+      - ./Admin Panel:/var/www/html:ro
+      - ./nginx/admin.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8081:80"
+    networks:
+      - fikaso_network
+    depends_on:
+      - admin_panel
+
+  # Store Panel
+  store_panel:
+    build:
+      context: ./Store Panel
+      dockerfile: Dockerfile
+    container_name: fikaso_store_panel
+    restart: unless-stopped
+    volumes:
+      - ./Store Panel:/var/www/html
+      - store_storage:/var/www/html/storage
+      - store_bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - fikaso_network
+    depends_on:
+      - mysql
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_HOST=mysql
+      - DB_DATABASE=${STORE_DB_NAME:-fikaso_store}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-fikaso_root_password}
+
+  # Store Panel Nginx
+  store_nginx:
+    image: nginx:alpine
+    container_name: fikaso_store_nginx
+    restart: unless-stopped
+    volumes:
+      - ./Store Panel:/var/www/html:ro
+      - ./nginx/store.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8082:80"
+    networks:
+      - fikaso_network
+    depends_on:
+      - store_panel
+
+  # Website Panel
+  website_panel:
+    build:
+      context: ./Website Panel
+      dockerfile: Dockerfile
+    container_name: fikaso_website_panel
+    restart: unless-stopped
+    volumes:
+      - ./Website Panel:/var/www/html
+      - website_storage:/var/www/html/storage
+      - website_bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - fikaso_network
+    depends_on:
+      - mysql
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_HOST=mysql
+      - DB_DATABASE=${WEBSITE_DB_NAME:-fikaso_website}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-fikaso_root_password}
+
+  # Website Panel Nginx
+  website_nginx:
+    image: nginx:alpine
+    container_name: fikaso_website_nginx
+    restart: unless-stopped
+    volumes:
+      - ./Website Panel:/var/www/html:ro
+      - ./nginx/website.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8083:80"
+    networks:
+      - fikaso_network
+    depends_on:
+      - website_panel
+
+  # Landing Panel (Static Site)
+  landing_nginx:
+    image: nginx:alpine
+    container_name: fikaso_landing_nginx
+    restart: unless-stopped
+    volumes:
+      - ./Landing Panel:/usr/share/nginx/html:ro
+      - ./nginx/landing.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8084:80"
+    networks:
+      - fikaso_network
+
+  # Nginx Reverse Proxy
+  nginx_proxy:
+    image: nginx:alpine
+    container_name: fikaso_nginx_proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - fikaso_network
+    depends_on:
+      - admin_nginx
+      - store_nginx
+      - website_nginx
+      - landing_nginx
+
+networks:
+  fikaso_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  admin_storage:
+  admin_bootstrap_cache:
+  store_storage:
+  store_bootstrap_cache:
+  website_storage:
+  website_bootstrap_cache:
+

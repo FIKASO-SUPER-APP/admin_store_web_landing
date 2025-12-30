@@ -1,22 +1,48 @@
+# Git
 .git
 .gitignore
-README.md
-DEPLOYMENT.md
-docker-compose.yml
-deploy.sh
-setup-ssl.sh
-env.example
-.env
-*.md
-node_modules
-vendor/bin
-storage/logs/*
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/views/*
-bootstrap/cache/*
-.phpunit.result.cache
-tests
-backups
-nginx
+.gitattributes
 
+# Documentation
+*.md
+README*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node modules (si présents)
+node_modules/
+npm-debug.log
+
+# Vendor (sera installé dans le conteneur)
+vendor/
+
+# Storage (sera monté comme volume)
+storage/*
+!storage/.gitkeep
+
+# Tests
+tests/
+phpunit.xml
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore

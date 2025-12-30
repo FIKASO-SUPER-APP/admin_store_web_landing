@@ -1,9 +1,18 @@
+# Environment
 .env
-.DS_Store
-backups/
-nginx/ssl/*
-!nginx/ssl/.gitkeep
-storage/logs/*
-!storage/logs/.gitkeep
+.env.backup
+.env.production
+
+# Docker volumes
 mysql_data/
+admin_storage/
+store_storage/
+website_storage/
+
+# Logs
 *.log
+logs/
+
+# Backups
+*.sql
+backup_*.sql
