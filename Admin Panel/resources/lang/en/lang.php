@@ -1504,7 +1504,7 @@ return [
     'upload_json_file' => 'Upload Credentials File (JSON Format)',
     'notification_sender_id_help' => "Instructions: Navigate to your Firebase Project Settings > Cloud Messaging. Under Firebase Cloud Messaging API, you will find the Sender ID.",
     'notification_json_file_help' => "Instructions: Go to Firebase Project Settings > Service accounts, scroll down and click on the 'Generate new private key' button. A JSON file will be downloaded.",
-    'price_instruction' => 'When the admin commission is enabled, it is automatically included in the product\'s price. For example, if a product is listed at $100 and the admin commission is 10%, the customer will be charged $110. The admin commission is applied based on the section. To manage the admin commission, navigate to Section / Service -> Select Your Section -> Admin Commission.',
+    'price_instruction' => 'When the admin commission is enabled, it is automatically included in the product\'s price. For example, if a product is listed at 100 CFA and the admin commission is 10%, the customer will be charged 110 FCFA. The admin commission is applied based on the section. To manage the admin commission, navigate to Section / Service -> Select Your Section -> Admin Commission.',
     'app_setting_banners' => 'App Banners',
     'app_setting_banners_fieldset' => 'App Banners Setting',
     'app_setting_app_home_banners' => 'App Banners',

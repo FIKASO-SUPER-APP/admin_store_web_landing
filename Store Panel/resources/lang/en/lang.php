@@ -534,7 +534,7 @@ return [
     'menu_card'=>'Menu Card Images',
     'enable_special_offer'=>'Enable Special Offer',
     'unknown' => '(Unknown/Deleted)',
-    'price_instruction'=>'When the admin commission is enabled, it is automatically included in the product\'s price. For example, if a product is listed at $100 and the admin commission is 10%, the customer will be charged $110. The admin commission is applied based on the section.',
+    'price_instruction'=>'When the admin commission is enabled, it is automatically included in the product\'s price. For example, if a product is listed at 100 FCFA and the admin commission is 10%, the customer will be charged 110 CFA. The admin commission is applied based on the section.',
     'app_payment_method_delete_alert'=>'Are you sure, you want to delete this withdrawal method ?',
     'add_withdrawal_method'=>'Add a withdrawal method',
     'update_withdrawal_method'=>'Update Withdrawal Method',
