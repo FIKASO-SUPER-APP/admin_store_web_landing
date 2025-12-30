@@ -29,6 +29,9 @@ WORKDIR /var/www/html
 # Copy composer files
 COPY composer.json composer.lock ./
 
+# Copy artisan file (needed for post-autoload-dump script)
+COPY artisan ./
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
