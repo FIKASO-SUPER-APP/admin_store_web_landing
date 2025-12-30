@@ -34,12 +34,34 @@ cd ..
 ./import-databases.sh
 ```
 
-### 4. Accéder aux applications
+### 4. Configurer SSL/HTTPS (Recommandé)
 
-- **Admin Panel** : http://localhost:8081 ou http://admin.fikaso.com
-- **Store Panel** : http://localhost:8082 ou http://store.fikaso.com  
-- **Website Panel** : http://localhost:8083 ou http://www.fikaso.com
-- **Landing Panel** : http://localhost:8084 ou http://landing.fikaso.com
+```bash
+# 1. Assurez-vous que vos domaines pointent vers votre serveur
+# 2. Utilisez le script automatique
+./setup-ssl.sh
+
+# Le script vous demandera vos domaines et votre email
+```
+
+**Note** : Pour la première configuration SSL, vous devrez peut-être utiliser temporairement la configuration HTTP :
+```bash
+cp nginx/proxy-http-only.conf nginx/proxy.conf
+docker-compose restart nginx_proxy
+./setup-ssl.sh
+# Puis restaurez HTTPS
+cp nginx/proxy-https.conf nginx/proxy.conf
+docker-compose restart nginx_proxy
+```
+
+### 5. Accéder aux applications
+
+- **Admin Panel** : https://admin.fikaso.com ou http://localhost:8081
+- **Store Panel** : https://store.fikaso.com ou http://localhost:8082  
+- **Website Panel** : https://www.fikaso.com ou http://localhost:8083
+- **Landing Panel** : https://landing.fikaso.com ou http://localhost:8084
+
+**Toutes les requêtes HTTP sont automatiquement redirigées vers HTTPS une fois SSL configuré.**
 
 ## 📋 Commandes essentielles
 
@@ -58,6 +80,10 @@ docker-compose restart
 
 # Voir le statut
 docker-compose ps
+
+# Renouveler les certificats SSL manuellement
+docker-compose run --rm certbot renew
+docker-compose restart nginx_proxy
 ```
 
 ## ⚙️ Configuration des domaines
@@ -66,15 +92,15 @@ docker-compose ps
 2. **Modifier nginx/proxy.conf** : Remplacez les domaines par les vôtres
 3. **Redémarrer le reverse proxy** : `docker-compose restart nginx_proxy`
 
-## 🔒 Configuration SSL (Recommandé)
+## 🔒 Configuration SSL (Déjà intégrée)
 
-```bash
-# Installer Certbot
-sudo apt-get install certbot python3-certbot-nginx
+La configuration HTTPS est déjà intégrée ! Il suffit de :
 
-# Générer les certificats
-sudo certbot --nginx -d admin.fikaso.com -d store.fikaso.com -d www.fikaso.com
-```
+1. Configurer vos DNS
+2. Exécuter `./setup-ssl.sh`
+3. Les certificats sont renouvelés automatiquement
+
+Consultez `SSL_SETUP.md` pour plus de détails.
 
 ## 🐛 Dépannage
 
@@ -104,7 +130,20 @@ docker-compose logs admin_nginx
 docker-compose restart admin_panel admin_nginx
 ```
 
+### Problème avec SSL
+```bash
+# Vérifier les certificats
+ls -la certbot/conf/live/
+
+# Vérifier les logs Certbot
+docker-compose logs certbot
+
+# Vérifier la config Nginx
+docker-compose exec nginx_proxy nginx -t
+```
+
 ## 📚 Documentation complète
 
-Consultez `README_DEPLOYMENT.md` pour la documentation complète.
-
+- **Déploiement complet** : `README_DEPLOYMENT.md`
+- **Configuration SSL** : `SSL_SETUP.md`
+- **Architecture** : `ARCHITECTURE.md`

@@ -150,12 +150,35 @@ A     landing.fikaso.com   -> VOTRE_IP_VPS
 server_name admin.fikaso.com admin.yourdomain.com;
 ```
 
+### 12. Configurer SSL/HTTPS (Recommandé)
+
+Consultez le guide complet dans `SSL_SETUP.md` :
+
+```bash
+# Méthode rapide avec le script automatique
+./setup-ssl.sh
+```
+
+**Important** : Pour la première configuration SSL, utilisez temporairement `nginx/proxy-http-only.conf` :
+
+```bash
+cp nginx/proxy.conf nginx/proxy-https.conf
+cp nginx/proxy-http-only.conf nginx/proxy.conf
+docker-compose restart nginx_proxy
+./setup-ssl.sh
+# Puis restaurez la config HTTPS
+cp nginx/proxy-https.conf nginx/proxy.conf
+docker-compose restart nginx_proxy
+```
+
 ## Accès aux applications
 
-- **Admin Panel** : http://admin.fikaso.com (ou http://VOTRE_IP:8081)
-- **Store Panel** : http://store.fikaso.com (ou http://VOTRE_IP:8082)
-- **Website Panel** : http://www.fikaso.com (ou http://VOTRE_IP:8083)
-- **Landing Panel** : http://landing.fikaso.com (ou http://VOTRE_IP:8084)
+- **Admin Panel** : https://admin.fikaso.com (ou http://VOTRE_IP:8081)
+- **Store Panel** : https://store.fikaso.com (ou http://VOTRE_IP:8082)
+- **Website Panel** : https://www.fikaso.com (ou http://VOTRE_IP:8083)
+- **Landing Panel** : https://landing.fikaso.com (ou http://VOTRE_IP:8084)
+
+**Note** : Toutes les requêtes HTTP sont automatiquement redirigées vers HTTPS une fois SSL configuré.
 
 ## Commandes utiles
 
@@ -193,20 +216,14 @@ docker-compose exec mysql mysql -uroot -p
 docker-compose ps
 ```
 
-## Configuration SSL/HTTPS (Recommandé)
+## Configuration SSL/HTTPS
 
-Pour activer HTTPS, vous pouvez utiliser Let's Encrypt avec Certbot :
+La configuration HTTPS est maintenant intégrée dans le projet. Consultez `SSL_SETUP.md` pour le guide complet.
 
-```bash
-# Installer Certbot
-sudo apt-get update
-sudo apt-get install certbot python3-certbot-nginx
-
-# Générer les certificats (à adapter selon vos domaines)
-sudo certbot --nginx -d admin.fikaso.com -d store.fikaso.com -d www.fikaso.com -d fikaso.com
-```
-
-Puis mettez à jour `nginx/proxy.conf` pour écouter sur le port 443.
+**Résumé rapide :**
+1. Configurez vos DNS pour pointer vers votre serveur
+2. Utilisez `./setup-ssl.sh` pour générer automatiquement les certificats
+3. Les certificats sont renouvelés automatiquement tous les 12h
 
 ## Dépannage
 

@@ -153,6 +153,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     ports:
       - "80:80"
       - "443:443"
@@ -163,6 +165,15 @@ services:
       - store_nginx
       - website_nginx
       - landing_nginx
+
+  # Certbot for Let's Encrypt SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: fikaso_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 networks:
   fikaso_network:

@@ -16,3 +16,11 @@ logs/
 # Backups
 *.sql
 backup_*.sql
+
+# SSL Certificates (ne jamais commiter les certificats)
+certbot/conf/
+certbot/www/
+*.pem
+*.key
+*.crt
+*.csr
