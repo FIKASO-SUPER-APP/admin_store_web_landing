@@ -58,7 +58,7 @@ services:
       - FALLBACK_LOCALE=en
 
       - APP_TIMEZONE='Africa/Bamako'
-      - NODE_PATH='/Users/bouba/.nvm/versions/node/v22.17.0/bin/node'
+      - NODE_PATH=${NODE_PATH}
 
   # Admin Panel Nginx
   admin_nginx:
