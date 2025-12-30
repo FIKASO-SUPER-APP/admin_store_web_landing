@@ -792,9 +792,10 @@
                                 database.collection('sections').doc(orderData.section_id).get().then(async function(sectionSnapshot) {
                                     var sectionData = sectionSnapshot.data();
                                     if (sectionData && sectionData.serviceTypeFlag === 'delivery-service') {
-                                        // C'est une section restaurant - jouer la sonnerie
+                                        // C'est une section restaurant - jouer la sonnerie et afficher le popup
                                         console.log("Nouvelle commande détectée dans la section restaurant - Jouer la sonnerie");
                                         playOrderRingtone(ringtoneUrl);
+                                        showNewOrderNotification(orderId, orderData, sectionData);
                                     }
                                 }).catch(function(error) {
                                     console.error("Erreur lors de la vérification de la section:", error);
@@ -850,6 +851,100 @@
                 }
             } catch (error) {
                 console.error("Erreur lors de la création de l'élément audio:", error);
+            }
+        }
+
+        // Fonction pour afficher la notification de nouvelle commande
+        async function showNewOrderNotification(orderId, orderData, sectionData) {
+            try {
+                // Récupérer les informations du client si disponibles
+                var customerName = 'Client';
+                var customerPhone = '';
+                var totalAmount = '0';
+                
+                if (orderData.authorID) {
+                    try {
+                        var userSnapshot = await database.collection('users').doc(orderData.authorID).get();
+                        if (userSnapshot.exists) {
+                            var userData = userSnapshot.data();
+                            customerName = (userData.firstName || '') + ' ' + (userData.lastName || '');
+                            customerPhone = userData.phoneNumber || '';
+                        }
+                    } catch (error) {
+                        console.error("Erreur lors de la récupération des données client:", error);
+                    }
+                }
+                
+                // Calculer le montant total
+                if (orderData.totalAmount) {
+                    totalAmount = orderData.totalAmount;
+                } else if (orderData.price) {
+                    totalAmount = orderData.price;
+                }
+                
+                // Formater le montant
+                var formattedAmount = totalAmount;
+                try {
+                    if (typeof totalAmount === 'number') {
+                        formattedAmount = totalAmount.toFixed(2);
+                    }
+                } catch (e) {}
+                
+                // Récupérer le nom du restaurant/magasin si disponible
+                var vendorName = 'Restaurant';
+                if (orderData.vendorID) {
+                    try {
+                        var vendorSnapshot = await database.collection('vendors').doc(orderData.vendorID).get();
+                        if (vendorSnapshot.exists) {
+                            var vendorData = vendorSnapshot.data();
+                            vendorName = vendorData.name || vendorData.title || 'Restaurant';
+                        }
+                    } catch (error) {
+                        console.error("Erreur lors de la récupération des données du restaurant:", error);
+                    }
+                }
+                
+                // Construire l'URL de la page de détail
+                var baseUrl = window.location.origin;
+                var orderDetailUrl = baseUrl + '/orders/edit/' + orderId;
+                
+                // Construire le HTML pour les détails
+                var detailsHtml = '<div style="text-align: left; margin-top: 15px;">';
+                detailsHtml += '<p style="margin: 5px 0;"><strong>ID Commande:</strong> ' + (orderId.length > 12 ? orderId.substring(0, 12) + '...' : orderId) + '</p>';
+                detailsHtml += '<p style="margin: 5px 0;"><strong>Client:</strong> ' + customerName + '</p>';
+                if (customerPhone) {
+                    detailsHtml += '<p style="margin: 5px 0;"><strong>Téléphone:</strong> ' + customerPhone + '</p>';
+                }
+                detailsHtml += '<p style="margin: 5px 0;"><strong>Restaurant:</strong> ' + vendorName + '</p>';
+                detailsHtml += '<p style="margin: 5px 0;"><strong>Montant:</strong> ' + formattedAmount + ' FCFA</p>';
+                if (orderData.orderType) {
+                    detailsHtml += '<p style="margin: 5px 0;"><strong>Type:</strong> ' + (orderData.orderType === 'delivery' ? 'Livraison' : orderData.orderType === 'takeaway' ? 'À emporter' : orderData.orderType) + '</p>';
+                }
+                detailsHtml += '</div>';
+                
+                // Afficher le popup avec SweetAlert2
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Nouvelle Commande!',
+                    html: detailsHtml,
+                    showCancelButton: true,
+                    confirmButtonText: 'Voir les détails',
+                    cancelButtonText: 'Fermer',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#6c757d',
+                    allowOutsideClick: false,
+                    allowEscapeKey: true,
+                    timer: 10000, // Fermer automatiquement après 10 secondes
+                    timerProgressBar: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Rediriger vers la page de détail de la commande
+                        window.location.href = orderDetailUrl;
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Erreur lors de l'affichage de la notification:", error);
             }
         }
         
