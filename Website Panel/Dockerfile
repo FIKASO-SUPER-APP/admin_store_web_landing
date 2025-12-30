@@ -29,14 +29,14 @@ WORKDIR /var/www/html
 # Copy composer files
 COPY composer.json composer.lock ./
 
-# Copy artisan file (needed for post-autoload-dump script)
-COPY artisan ./
-
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Install PHP dependencies without scripts (scripts need full app files)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
 
 # Copy application files
 COPY . .
+
+# Regenerate optimized autoloader (scripts will run at runtime when app is configured)
+RUN composer dump-autoload --optimize --no-interaction
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
