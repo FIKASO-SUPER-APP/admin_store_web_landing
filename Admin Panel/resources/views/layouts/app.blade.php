@@ -18,11 +18,11 @@
     <?php } ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-timepicker/0.5.2/css/bootstrap-timepicker.min.css">
     <link href="{{ asset('css/style.css') }}" rel="stylesheet">
-    
+
     <?php if (str_replace('_', '-', app()->getLocale()) == 'ar' || @$_COOKIE['is_rtl'] == 'true') { ?>
         <link href="{{asset('css/style_rtl.css')}}" rel="stylesheet">
     <?php } ?>
-    
+
     <link href="{{ asset('css/icons/font-awesome/css/font-awesome.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/plugins/toast-master/css/jquery.toast.css')}}" rel="stylesheet">
     <link href="{{ asset('css/colors/blue.css') }}" rel="stylesheet">
@@ -69,7 +69,7 @@
     </script>
 
     <!-- @yield('style') -->
-     
+
      <style>
         :root {
             --admin-panel-color: "#000000";
@@ -164,9 +164,9 @@
         const datatableLang = {
             "decimal":        "",
             "emptyTable":     "{{ trans('lang.no_record_found') }}",
-            "info":           "{{ trans('lang.datatable_info') }}", 
-            "infoEmpty":      "{{ trans('lang.datatable_info_empty') }}", 
-            "infoFiltered":   "{{ trans('lang.datatable_info_filtered') }}", 
+            "info":           "{{ trans('lang.datatable_info') }}",
+            "infoEmpty":      "{{ trans('lang.datatable_info_empty') }}",
+            "infoFiltered":   "{{ trans('lang.datatable_info_filtered') }}",
             "lengthMenu":     "{{ trans('lang.datatable_length_menu') }}",
             "loadingRecords": "{{ trans('lang.loading') }}",
             "processing":     "{{ trans('lang.processing') }}",
@@ -193,9 +193,9 @@
         var createdAt = { _nanoseconds: createdAtman.nanoseconds, _seconds: createdAtman.seconds };
         var mapType = 'ONLINE';
 
-        var sosInitialized = false; 
+        var sosInitialized = false;
         database.collection('SOS').onSnapshot((snapshot) => {
-            if (!sosInitialized) {               
+            if (!sosInitialized) {
                 sosInitialized = true;
                 return;
             }
@@ -217,7 +217,7 @@
                 }
             });
         });
-        
+
         var ref = database.collection('settings').doc("globalSettings");
         ref.get().then(async function (snapshots) {
             var globalSettings = snapshots.data();
@@ -225,14 +225,14 @@
             $("#logo_web").attr('src', globalSettings.appLogo);
             document.documentElement.style.setProperty('--admin-panel-color', globalSettings.admin_panel_color);
         });
-        
+
         var placeholderImage = '';
         var placeholder = database.collection('settings').doc('placeHolderImage');
         placeholder.get().then(async function (snapshotsimage) {
             var placeholderImageData = snapshotsimage.data();
             placeholderImage = placeholderImageData.image;
         })
-        
+
         $(document).ready(async function () {
             getServiceSections();
             $(document).on('click', '.service-list-box', function() {
@@ -247,7 +247,7 @@
                 /*window.location.reload();*/
             });
         });
-        
+
         var langcount = 0;
         var languages_list = database.collection('settings').doc('languages');
         languages_list.get().then(async function (snapshotslang) {
@@ -296,10 +296,10 @@
             } catch (error) {
             }
         });
-        
+
         async function sendEmail(url, subject, message, recipients, fromAddress, fromName, smtpHost, smtpPort, smtpUsername, smtpPassword, smtpEncryption) {
             console.log('📧 sendEmail appelé avec paramètres SMTP');
-            
+
             var checkFlag = false;
             await $.ajax({
                 type: 'POST',
@@ -342,14 +342,14 @@
                 mapType = "OFFLINE"
             }
         });
-        
+
         async function getServiceSections() {
             let ref = database.collection('sections').where('isActive', '==', true).orderBy('name', 'asc');;
             const sectionsSnapshot = await ref.get();
             const sectionsContainer = document.getElementById('sections_header');
             sectionsContainer.innerHTML = await buildServiceSectionsHTML(sectionsSnapshot);
         }
-        
+
         async function buildServiceSectionsHTML(snapshot) {
             let html = '';
             var addSectionRoute = "{{ route('section.create') }}";
@@ -431,7 +431,7 @@
         };
 
         loadGoogleMapsScript();
-        
+
         database.collection('settings').doc("notification_setting").get().then(async function (snapshots) {
             var data = snapshots.data();
             serviceJson = data.serviceJson;
@@ -701,11 +701,11 @@
         async function setupOrderRingtoneListener() {
             var database = firebase.firestore();
             var section_id = getCookie('section_id') || null;
-            
+
             // Vérifier si SystemDispatch est activé
             var refSystemDispatch = database.collection('settings').doc("SystemDispatch");
             var systemDispatchEnabled = false;
-            
+
             await refSystemDispatch.get().then(async function(snapshot) {
                 var systemDispatchData = snapshot.data();
                 if (systemDispatchData && systemDispatchData.enabled) {
@@ -722,7 +722,7 @@
             // Récupérer l'URL de la sonnerie depuis globalSettings
             var refGlobalSettings = database.collection('settings').doc("globalSettings");
             var ringtoneUrl = '';
-            
+
             await refGlobalSettings.get().then(async function(snapshot) {
                 var globalSettings = snapshot.data();
                 if (globalSettings && globalSettings.order_ringtone_url) {
@@ -743,47 +743,47 @@
 
             // Timestamp pour ne détecter que les commandes créées après le chargement de la page
             var pageLoadTime = firebase.firestore.Timestamp.now();
-            
+
             // Stocker les IDs des commandes existantes pour éviter de jouer la sonnerie pour elles
             var existingOrderIds = new Set();
             var ordersRef = database.collection('vendor_orders');
-            
+
             // Filtrer par section si une section est sélectionnée
             if (section_id) {
                 ordersRef = ordersRef.where('section_id', '==', section_id);
             }
-            
+
             // Récupérer d'abord les commandes existantes pour les ignorer
             await ordersRef.where('status', '==', 'Order Placed').get().then(function(snapshot) {
                 snapshot.forEach(function(doc) {
                     existingOrderIds.add(doc.id);
                 });
             });
-            
+
             // Maintenant écouter uniquement les nouvelles commandes
             var newOrdersRef = database.collection('vendor_orders');
             if (section_id) {
                 newOrdersRef = newOrdersRef.where('section_id', '==', section_id);
             }
             newOrdersRef = newOrdersRef.where('status', '==', 'Order Placed');
-            
+
             // Variable globale pour stocker la fonction unsubscribe
             if (!window.unsubscribeOrderListener) {
                 window.unsubscribeOrderListener = null;
             }
-            
+
             // Écouter les nouvelles commandes en temps réel
             window.unsubscribeOrderListener = newOrdersRef.onSnapshot(function(snapshot) {
                 snapshot.docChanges().forEach(function(change) {
                     if (change.type === 'added') {
                         var orderId = change.doc.id;
                         var orderData = change.doc.data();
-                        
+
                         // Ignorer les commandes qui existaient déjà au chargement
                         if (existingOrderIds.has(orderId)) {
                             return;
                         }
-                        
+
                         // Vérifier que la commande a été créée après le chargement de la page
                         var orderCreatedAt = orderData.createdAt;
                         if (orderCreatedAt && orderCreatedAt.toMillis() > pageLoadTime.toMillis()) {
@@ -823,24 +823,24 @@
                     console.error("URL de sonnerie vide ou invalide");
                     return;
                 }
-                
+
                 console.log("Tentative de lecture de la sonnerie:", ringtoneUrl);
-                
+
                 // Créer un élément audio
                 var audio = new Audio(ringtoneUrl);
-                
+
                 // Gérer les erreurs de chargement
                 audio.addEventListener('error', function(e) {
                     console.error("Erreur lors du chargement de l'audio:", e);
                     console.error("Code d'erreur:", audio.error ? audio.error.code : 'unknown');
                 });
-                
+
                 // Configurer l'audio
                 audio.volume = 1.0; // Volume maximum
-                
+
                 // Tenter de jouer l'audio
                 var playPromise = audio.play();
-                
+
                 if (playPromise !== undefined) {
                     playPromise.then(function() {
                         console.log("Sonnerie de commande jouée avec succès");
@@ -860,8 +860,7 @@
                 // Récupérer les informations du client si disponibles
                 var customerName = 'Client';
                 var customerPhone = '';
-                var totalAmount = '0';
-                
+
                 if (orderData.authorID) {
                     try {
                         var userSnapshot = await database.collection('users').doc(orderData.authorID).get();
@@ -874,22 +873,7 @@
                         console.error("Erreur lors de la récupération des données client:", error);
                     }
                 }
-                
-                // Calculer le montant total
-                if (orderData.totalAmount) {
-                    totalAmount = orderData.totalAmount;
-                } else if (orderData.price) {
-                    totalAmount = orderData.price;
-                }
-                
-                // Formater le montant
-                var formattedAmount = totalAmount;
-                try {
-                    if (typeof totalAmount === 'number') {
-                        formattedAmount = totalAmount.toFixed(2);
-                    }
-                } catch (e) {}
-                
+
                 // Récupérer le nom du restaurant/magasin si disponible
                 var vendorName = 'Restaurant';
                 if (orderData.vendorID) {
@@ -903,11 +887,11 @@
                         console.error("Erreur lors de la récupération des données du restaurant:", error);
                     }
                 }
-                
+
                 // Construire l'URL de la page de détail
                 var baseUrl = window.location.origin;
                 var orderDetailUrl = baseUrl + '/orders/edit/' + orderId;
-                
+
                 // Construire le HTML pour les détails
                 var detailsHtml = '<div style="text-align: left; margin-top: 15px;">';
                 detailsHtml += '<p style="margin: 5px 0;"><strong>ID Commande:</strong> ' + (orderId.length > 12 ? orderId.substring(0, 12) + '...' : orderId) + '</p>';
@@ -916,12 +900,11 @@
                     detailsHtml += '<p style="margin: 5px 0;"><strong>Téléphone:</strong> ' + customerPhone + '</p>';
                 }
                 detailsHtml += '<p style="margin: 5px 0;"><strong>Restaurant:</strong> ' + vendorName + '</p>';
-                detailsHtml += '<p style="margin: 5px 0;"><strong>Montant:</strong> ' + formattedAmount + ' FCFA</p>';
                 if (orderData.orderType) {
                     detailsHtml += '<p style="margin: 5px 0;"><strong>Type:</strong> ' + (orderData.orderType === 'delivery' ? 'Livraison' : orderData.orderType === 'takeaway' ? 'À emporter' : orderData.orderType) + '</p>';
                 }
                 detailsHtml += '</div>';
-                
+
                 // Afficher le popup avec SweetAlert2
                 Swal.fire({
                     icon: 'info',
@@ -942,12 +925,12 @@
                         window.location.href = orderDetailUrl;
                     }
                 });
-                
+
             } catch (error) {
                 console.error("Erreur lors de l'affichage de la notification:", error);
             }
         }
-        
+
     </script>
 
     @yield('scripts')
