@@ -3,9 +3,9 @@
   <component name="PHPUnit">
     <option name="directories">
       <list>
-        <option value="$PROJECT_DIR$/Website Panel/tests" />
-        <option value="$PROJECT_DIR$/Admin Panel/tests" />
         <option value="$PROJECT_DIR$/Store Panel/tests" />
+        <option value="$PROJECT_DIR$/Admin Panel/tests" />
+        <option value="$PROJECT_DIR$/Website Panel/tests" />
       </list>
     </option>
   </component>

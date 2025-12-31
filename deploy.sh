@@ -20,7 +20,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Vérifier si Docker Compose est installé
-if ! command -v docker-compose &> /dev/null; then
+if ! docker compose version &> /dev/null; then
     echo -e "${RED}❌ Docker Compose n'est pas installé. Veuillez l'installer d'abord.${NC}"
     exit 1
 fi
@@ -65,18 +65,18 @@ done
 
 # Construire les images Docker
 echo -e "${GREEN}🔨 Construction des images Docker...${NC}"
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Démarrer les conteneurs
 echo -e "${GREEN}🚀 Démarrage des conteneurs...${NC}"
-docker-compose up -d
+docker compose up -d
 
 # Attendre que MySQL soit prêt
 echo -e "${GREEN}⏳ Attente du démarrage de MySQL...${NC}"
 sleep 15
 
 # Vérifier que MySQL est prêt
-until docker-compose exec -T mysql mysqladmin ping -h localhost --silent; do
+until docker compose exec -T mysql mysqladmin ping -h localhost --silent; do
     echo -e "${YELLOW}⏳ En attente de MySQL...${NC}"
     sleep 5
 done
@@ -85,17 +85,17 @@ echo -e "${GREEN}✅ MySQL est prêt!${NC}"
 
 # Générer les clés d'application Laravel
 echo -e "${GREEN}🔑 Génération des clés d'application...${NC}"
-docker-compose exec -T admin_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Admin Panel: Vérifiez manuellement la clé${NC}"
-docker-compose exec -T store_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Store Panel: Vérifiez manuellement la clé${NC}"
-docker-compose exec -T website_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Website Panel: Vérifiez manuellement la clé${NC}"
+docker compose exec -T admin_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Admin Panel: Vérifiez manuellement la clé${NC}"
+docker compose exec -T store_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Store Panel: Vérifiez manuellement la clé${NC}"
+docker compose exec -T website_panel php artisan key:generate --force 2>/dev/null || echo -e "${YELLOW}⚠️  Website Panel: Vérifiez manuellement la clé${NC}"
 
 # Optimiser Laravel pour la production
 echo -e "${GREEN}⚡ Optimisation de Laravel pour la production...${NC}"
 for app in admin_panel store_panel website_panel; do
     echo -e "${GREEN}   Optimisation de $app...${NC}"
-    docker-compose exec -T $app php artisan config:cache 2>/dev/null || true
-    docker-compose exec -T $app php artisan route:cache 2>/dev/null || true
-    docker-compose exec -T $app php artisan view:cache 2>/dev/null || true
+    docker compose exec -T $app php artisan config:cache 2>/dev/null || true
+    docker compose exec -T $app php artisan route:cache 2>/dev/null || true
+    docker compose exec -T $app php artisan view:cache 2>/dev/null || true
 done
 
 echo -e "${GREEN}✅ Déploiement terminé!${NC}"

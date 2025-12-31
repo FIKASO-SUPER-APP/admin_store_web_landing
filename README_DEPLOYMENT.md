@@ -72,9 +72,9 @@ DB_PASSWORD=votre_mot_de_passe_mysql
 
 ```bash
 # Dans chaque dossier d'application Laravel
-docker-compose exec admin_panel php artisan key:generate
-docker-compose exec store_panel php artisan key:generate
-docker-compose exec website_panel php artisan key:generate
+docker compose exec admin_panel php artisan key:generate
+docker compose exec store_panel php artisan key:generate
+docker compose exec website_panel php artisan key:generate
 ```
 
 ### 5. Configurer les permissions
@@ -90,8 +90,8 @@ chmod -R 775 "Admin Panel/bootstrap/cache" "Store Panel/bootstrap/cache" "Websit
 ### 6. Construire et démarrer les conteneurs
 
 ```bash
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ### 7. Initialiser les bases de données
@@ -100,34 +100,34 @@ Si vous avez des fichiers SQL d'import :
 
 ```bash
 # Importer les bases de données
-docker-compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin < emart_admin_database.sql
-docker-compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_store < emart_store_database.sql
-docker-compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_website < emart_website_database.sql
+docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin < emart_admin_database.sql
+docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_store < emart_store_database.sql
+docker compose exec mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_website < emart_website_database.sql
 ```
 
 ### 8. Exécuter les migrations Laravel (si nécessaire)
 
 ```bash
-docker-compose exec admin_panel php artisan migrate --force
-docker-compose exec store_panel php artisan migrate --force
-docker-compose exec website_panel php artisan migrate --force
+docker compose exec admin_panel php artisan migrate --force
+docker compose exec store_panel php artisan migrate --force
+docker compose exec website_panel php artisan migrate --force
 ```
 
 ### 9. Optimiser Laravel pour la production
 
 ```bash
 # Pour chaque application
-docker-compose exec admin_panel php artisan config:cache
-docker-compose exec admin_panel php artisan route:cache
-docker-compose exec admin_panel php artisan view:cache
+docker compose exec admin_panel php artisan config:cache
+docker compose exec admin_panel php artisan route:cache
+docker compose exec admin_panel php artisan view:cache
 
-docker-compose exec store_panel php artisan config:cache
-docker-compose exec store_panel php artisan route:cache
-docker-compose exec store_panel php artisan view:cache
+docker compose exec store_panel php artisan config:cache
+docker compose exec store_panel php artisan route:cache
+docker compose exec store_panel php artisan view:cache
 
-docker-compose exec website_panel php artisan config:cache
-docker-compose exec website_panel php artisan route:cache
-docker-compose exec website_panel php artisan view:cache
+docker compose exec website_panel php artisan config:cache
+docker compose exec website_panel php artisan route:cache
+docker compose exec website_panel php artisan view:cache
 ```
 
 ### 10. Configurer les domaines DNS
@@ -164,11 +164,11 @@ Consultez le guide complet dans `SSL_SETUP.md` :
 ```bash
 cp nginx/proxy.conf nginx/proxy-https.conf
 cp nginx/proxy-http-only.conf nginx/proxy.conf
-docker-compose restart nginx_proxy
+docker compose restart nginx_proxy
 ./setup-ssl.sh
 # Puis restaurez la config HTTPS
 cp nginx/proxy-https.conf nginx/proxy.conf
-docker-compose restart nginx_proxy
+docker compose restart nginx_proxy
 ```
 
 ## Accès aux applications
@@ -184,36 +184,36 @@ docker-compose restart nginx_proxy
 
 ### Voir les logs
 ```bash
-docker-compose logs -f
-docker-compose logs -f admin_panel
-docker-compose logs -f mysql
+docker compose logs -f
+docker compose logs -f admin_panel
+docker compose logs -f mysql
 ```
 
 ### Redémarrer un service
 ```bash
-docker-compose restart admin_panel
-docker-compose restart nginx_proxy
+docker compose restart admin_panel
+docker compose restart nginx_proxy
 ```
 
 ### Arrêter tous les services
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Arrêter et supprimer les volumes (ATTENTION : supprime les données)
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Accéder au shell d'un conteneur
 ```bash
-docker-compose exec admin_panel bash
-docker-compose exec mysql mysql -uroot -p
+docker compose exec admin_panel bash
+docker compose exec mysql mysql -uroot -p
 ```
 
 ### Vérifier le statut
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ## Configuration SSL/HTTPS
@@ -236,18 +236,18 @@ chmod -R 755 "Admin Panel/public"
 
 2. Vérifiez que les fichiers statiques sont bien servis par Nginx
 3. Videz le cache du navigateur
-4. Vérifiez les logs Nginx : `docker-compose logs nginx_proxy`
+4. Vérifiez les logs Nginx : `docker compose logs nginx_proxy`
 
 ### Erreur de connexion à la base de données
 
-1. Vérifiez que MySQL est démarré : `docker-compose ps mysql`
+1. Vérifiez que MySQL est démarré : `docker compose ps mysql`
 2. Vérifiez les credentials dans les fichiers `.env`
-3. Testez la connexion : `docker-compose exec mysql mysql -uroot -p`
+3. Testez la connexion : `docker compose exec mysql mysql -uroot -p`
 
 ### Erreur 502 Bad Gateway
 
 1. Vérifiez que les conteneurs PHP-FPM sont démarrés
-2. Vérifiez les logs : `docker-compose logs admin_panel`
+2. Vérifiez les logs : `docker compose logs admin_panel`
 3. Vérifiez la configuration Nginx
 
 ## Maintenance
@@ -255,15 +255,15 @@ chmod -R 755 "Admin Panel/public"
 ### Sauvegarder les bases de données
 
 ```bash
-docker-compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin > backup_admin_$(date +%Y%m%d).sql
-docker-compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_store > backup_store_$(date +%Y%m%d).sql
-docker-compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_website > backup_website_$(date +%Y%m%d).sql
+docker compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin > backup_admin_$(date +%Y%m%d).sql
+docker compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_store > backup_store_$(date +%Y%m%d).sql
+docker compose exec mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_website > backup_website_$(date +%Y%m%d).sql
 ```
 
 ### Restaurer une base de données
 
 ```bash
-docker-compose exec -T mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin < backup_admin_20240101.sql
+docker compose exec -T mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} fikaso_admin < backup_admin_20240101.sql
 ```
 
 ## Support

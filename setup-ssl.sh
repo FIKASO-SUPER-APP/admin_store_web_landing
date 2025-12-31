@@ -44,9 +44,9 @@ fi
 
 # Vérifier que les conteneurs sont démarrés
 echo -e "${GREEN}🔍 Vérification que les conteneurs sont démarrés...${NC}"
-if ! docker-compose ps | grep -q "fikaso_nginx_proxy.*Up"; then
+if ! docker compose ps | grep -q "fikaso_nginx_proxy.*Up"; then
     echo -e "${YELLOW}⚠️  Démarrage des conteneurs...${NC}"
-    docker-compose up -d nginx_proxy
+    docker compose up -d nginx_proxy
     sleep 5
 fi
 
@@ -56,7 +56,7 @@ echo -e "${GREEN}🔐 Génération des certificats SSL...${NC}"
 for DOMAIN in $DOMAINS; do
     echo -e "${GREEN}   Génération du certificat pour $DOMAIN...${NC}"
     
-    docker-compose run --rm certbot certonly \
+    docker compose run --rm certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
         --email $EMAIL \
@@ -73,7 +73,7 @@ done
 
 # Redémarrer le reverse proxy pour charger les nouveaux certificats
 echo -e "${GREEN}🔄 Redémarrage du reverse proxy...${NC}"
-docker-compose restart nginx_proxy
+docker compose restart nginx_proxy
 
 echo ""
 echo -e "${GREEN}✅ Configuration SSL terminée!${NC}"
@@ -84,5 +84,5 @@ echo -e "   2. Testez l'accès HTTPS: https://votre-domaine.com"
 echo -e "   3. Les certificats seront renouvelés automatiquement tous les 12h"
 echo ""
 echo -e "${GREEN}💡 Pour renouveler manuellement:${NC}"
-echo -e "   docker-compose run --rm certbot renew"
+echo -e "   docker compose run --rm certbot renew"
 
