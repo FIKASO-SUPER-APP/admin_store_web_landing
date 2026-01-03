@@ -115,10 +115,12 @@
                         
                     <?php if ($id != '') { ?>
                         
+                            <a class="btn-info btn rounded-full mr-2" href="{!! route('items.import', $id) !!}"><i class="mdi mdi-upload mr-2"></i>Bulk Import</a>
                             <a class="btn-primary btn rounded-full" href="{!! route('items.create') !!}/{{$id}}"><i class="mdi mdi-plus mr-2"></i>{{trans('lang.item_create')}}</a>
                         
                         <?php } else { ?>
                         
+                            <a class="btn-info btn rounded-full mr-2" href="{!! route('items.import') !!}"><i class="mdi mdi-upload mr-2"></i>Bulk Import</a>
                             <a class="btn-primary btn rounded-full" href="{!! route('items.create') !!}"><i class="mdi mdi-plus mr-2"></i>{{trans('lang.item_create')}}</a>
                        
                     <?php } ?>

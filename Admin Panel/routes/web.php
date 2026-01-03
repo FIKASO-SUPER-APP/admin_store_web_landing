@@ -175,6 +175,10 @@ Route::middleware(['permission:items,items.create'])->group(function () {
     Route::get('/item/create', [App\Http\Controllers\FoodController::class, 'create'])->name('items.create');
 });
 Route::get('/item/view/{id}', [App\Http\Controllers\FoodController::class, 'view'])->name('items.view');
+Route::middleware(['permission:items,items.create'])->group(function () {
+    Route::get('/items/import/{id?}', [App\Http\Controllers\FoodController::class, 'import'])->name('items.import');
+    Route::get('/items/download-template', [App\Http\Controllers\FoodController::class, 'downloadTemplate'])->name('items.download.template');
+});
 
 Route::middleware(['permission:parcel-categories,parcel.categories'])->group(function () {
     Route::get('/parcelCategory', [App\Http\Controllers\ParcelController::class, 'index'])->name('parcelCategory');
